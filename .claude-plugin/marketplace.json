@@ -1,0 +1,16 @@
+{
+  "name": "issue-flow",
+  "owner": {
+    "name": "Matteo Donato"
+  },
+  "plugins": [
+    {
+      "name": "issue-flow",
+      "source": "./",
+      "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue. Funziona su GitLab (glab) e GitHub (gh).",
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": ["issue", "roadmap", "gitlab", "github", "workflow"]
+    }
+  ]
+}

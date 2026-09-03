@@ -1,0 +1,83 @@
+# Issue Flow
+
+Dalla richiesta alla merge request passando per una issue che contiene il piano **e** la
+roadmap che lo esegue. Tre skill che si passano il lavoro, su **GitLab** (`glab`) o **GitHub**
+(`gh`) indifferentemente: la piattaforma si deduce dal remote.
+
+Il principio che tiene insieme tutto: *la issue deve essere eseguibile da un agente che non ha
+assistito alla conversazione.* Da lì discendono i riferimenti `file.ts:42` verificati, i numeri
+misurati e non stimati, le decisioni scritte con la loro motivazione, il fuori perimetro
+esplicito.
+
+| skill | cosa fa |
+|---|---|
+| `/issue-flow:plan` | ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
+| `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase |
+| `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue |
+
+Più il subagent `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
+toccare la issue: quello lo fa l'orchestratore, dopo aver verificato l'output vero.
+
+## Installazione
+
+```bash
+/plugin marketplace add <owner>/issue-flow
+/plugin install issue-flow@issue-flow
+```
+
+Serve `glab` o `gh` installato e autenticato — le skill lo controllano al passo 0 e si fermano
+con il comando da lanciare se manca. Il login è interattivo e Claude non può farlo.
+
+## Configurazione
+
+Tutte le opzioni sono facoltative: senza, le skill ricavano quello che serve dal repo. Si
+impostano quando abiliti il plugin, o con `claude plugin install --config chiave=valore`.
+
+| opzione | default | a cosa serve |
+|---|---|---|
+| `default_branch` | dal repo | il branch in cui vengono unite le MR/PR |
+| `branch_prefix` | `issue-` | il branch di lavoro è `<prefisso><numero della issue>` |
+| `verify_commands` | dal progetto | i comandi che devono passare prima di chiudere una fase |
+| `docs_paths` | dal progetto | la documentazione che la fase di chiusura rilegge |
+| `figma_file` | vuoto | l'id del file Figma da allineare prima del codice; vuoto = nessuna fase Figma |
+
+Quando `verify_commands` e `docs_paths` non sono impostati, `/issue-flow:plan` li ricava in
+ricognizione — script di `package.json`, target del `Makefile`, `pyproject.toml`, job della CI
+— e li **scrive nella issue**, così la fase di verifica ha comandi veri invece di un generico
+«esegui i test». Se il progetto ha un `CLAUDE.md`, di solito li dice già.
+
+## Come si lavora
+
+```
+/issue-flow:plan aggiungere il filtro per data alla lista        →  apre la issue #12
+/issue-flow:implement 12                                         →  branch issue-12, un commit per fase
+/issue-flow:close 12                                             →  apre la MR/PR
+/issue-flow:close 12 --chiudi                                    →  a merge avvenuto, chiude la issue
+```
+
+Ognuna riparte da sola dopo un `/clear`: lo stato sta nelle checkbox della issue, non nella
+conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrente.
+
+## Le tre regole che il plugin non negozia
+
+**Si spunta mano a mano.** Alla fine di ogni fase, nello stesso commit che la porta — non a
+lavoro finito. Una roadmap che non dice il proprio stato non serve a niente, e una che mente
+è peggio di nessuna roadmap: se una decisione cambia, si riscrive la riga invece di spuntarla.
+
+**Il corpo si rilegge dal server prima di riscriverlo.** L'update sostituisce l'intero campo e
+non fa merge: partire da una copia tenuta in conversazione cancella le caselle che qualcuno ha
+spuntato dalla pagina nel frattempo.
+
+**La MR/PR si apre e non si merga.** Il merge lo chiede l'utente, sempre — nemmeno con le
+pipeline verdi.
+
+## GitLab e GitHub
+
+`TRACKER.md`, nella cartella del plugin, ha la corrispondenza completa dei comandi e le
+differenze che mordono: il campo del corpo che si chiama `description` di qua e `body` di là,
+il `--limit` di `gh issue list` fermo a 30, `task_completion_status` che esiste solo su GitLab,
+i CRLF nei corpi scritti dalla web di GitHub, `gh pr create` che non ha `--related-issue`.
+
+## Licenza
+
+MIT.
