@@ -7,7 +7,16 @@
     "name": "Matteo Donato"
   },
   "license": "MIT",
-  "keywords": ["issue", "roadmap", "gitlab", "github", "workflow", "planning"],
+  "homepage": "https://gitlab.com/bhmg/utils/issues-master-skills",
+  "repository": "https://gitlab.com/bhmg/utils/issues-master-skills",
+  "keywords": [
+    "issue",
+    "roadmap",
+    "gitlab",
+    "github",
+    "workflow",
+    "planning"
+  ],
   "userConfig": {
     "default_branch": {
       "type": "string",

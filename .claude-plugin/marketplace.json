@@ -10,7 +10,15 @@
       "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue. Funziona su GitLab (glab) e GitHub (gh).",
       "version": "1.0.0",
       "category": "productivity",
-      "keywords": ["issue", "roadmap", "gitlab", "github", "workflow"]
+      "keywords": [
+        "issue",
+        "roadmap",
+        "gitlab",
+        "github",
+        "workflow"
+      ],
+      "homepage": "https://gitlab.com/bhmg/utils/issues-master-skills",
+      "repository": "https://gitlab.com/bhmg/utils/issues-master-skills"
     }
   ]
 }
