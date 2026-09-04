@@ -21,7 +21,7 @@ varianti, ma le trappole (il campo del corpo che cambia nome, il `--limit` di
 
 ```
 /issue-flow:plan <descrizione della modifica>   # il caso normale: dalla richiesta alla issue
-/issue-flow:plan                                # usa il piano appena approvato in plan mode
+/issue-flow:plan                                # usa un piano già approvato in questa conversazione
 /issue-flow:plan spunta <n>                     # rileggi la roadmap e aggiorna le spunte
 /issue-flow:plan rivedi <n>                     # riapri il piano di una issue e riscrivilo
 ```
@@ -81,14 +81,31 @@ comando dà 404 o «could not determine base repo» il remote è un alias SSH, e
 `TRACKER.md` §2 — una riga per piattaforma. Se il remote non è né GitHub né GitLab, o il CLI
 che servirebbe non è installato, fermati e dillo: non si apre una issue a mano.
 
-### 1. Entra in plan mode
+### 1. Lavora come in plan mode, senza entrarci
 
-Chiama `EnterPlanMode` prima di qualsiasi altra cosa. La ricognizione e i bivi di
-progettazione vanno fatti lì dentro; la issue si scrive solo dopo che l'utente ha approvato
-il piano con `ExitPlanMode`.
+**Non chiamare mai `EnterPlanMode` né `ExitPlanMode`.** `ExitPlanMode` chiude con la
+proposta di implementare il piano, e qui il piano non si implementa: si scrive nella issue,
+e a implementarlo sarà `/issue-flow:implement`. Il modo di lavorare però è lo stesso del plan
+mode, e vale da qui fino alla creazione della issue:
 
-Salta questo passo solo se il piano è già stato approvato in plan mode in questa
-conversazione — è il caso di `/issue-flow:plan` senza argomenti.
+- **solo lettura.** Fino al passo 5 non modifichi niente nel repo: niente `Edit` o `Write`
+  sui file del progetto, niente comandi che cambiano lo stato. Leggi, cerchi, misuri. L'unico
+  file che scrivi è il corpo della issue, nello scratchpad;
+- **le domande le fai mano a mano.** I bivi di progettazione del passo 3 si chiedono con
+  `AskUserQuestion` appena la ricognizione li fa emergere, come farebbe il plan mode: non
+  accumularli per farne una sola raffica alla fine, e non lasciarli impliciti;
+- **il piano si presenta prima di aprire la issue.** Chiusi i bivi, scrivi in chat un riassunto
+  del piano: cosa cambia, i vincoli trovati in ricognizione, le decisioni prese da solo con
+  la motivazione, le fasi con una riga ciascuna. Poi chiedi con `AskUserQuestion` — è
+  questo il posto dell'approvazione, non `ExitPlanMode` — con tre opzioni: «Apri la issue»
+  (Recommended), «Cambia qualcosa» (l'utente dice cosa, tu correggi il piano e richiedi),
+  «Lascia stare» (non apri niente e ti fermi);
+- **solo «Apri la issue» porta al passo 5.** Non offrire mai di implementare, né come opzione
+  della domanda né nel messaggio di consegna.
+
+Se il piano è già stato approvato in questa conversazione — l'utente ha usato il plan mode
+per conto suo e l'ha approvato, oppure è `/issue-flow:plan` senza argomenti — salta il
+riassunto e la domanda di approvazione: la ricognizione è fatta, vai ai passi 4 e 5.
 
 ### 2. Ricognizione nel codice — non saltabile
 
