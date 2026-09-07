@@ -21,13 +21,12 @@ toccare la issue: quello lo fa l'orchestratore, dopo aver verificato l'output ve
 ## Installazione
 
 ```
-/plugin marketplace add https://gitlab.com/bhmg/utils/issues-master-skills.git
+/plugin marketplace add https://github.com/MatteoSid/Issues-Master-Skills.git
 /plugin install issue-flow@issue-flow
 ```
 
-Il repo è privato, quindi il `marketplace add` usa le credenziali git della macchina: se
-cloni da GitLab via SSH, va bene anche
-`git@gitlab.com:bhmg/utils/issues-master-skills.git`.
+Il `marketplace add` clona con le credenziali git della macchina, quindi va bene anche l'SSH:
+`git@github.com:MatteoSid/Issues-Master-Skills.git`.
 
 Serve `glab` o `gh` installato e autenticato — le skill lo controllano al passo 0 e si fermano
 con il comando da lanciare se manca. Il login è interattivo e Claude non può farlo.
