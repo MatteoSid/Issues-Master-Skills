@@ -72,8 +72,11 @@ Per uno sviluppo che non sta in una issue:
 ```
 
 Le figlie si eseguono una alla volta, ognuna con il suo branch e la sua MR/PR, e ognuna parte
-dal branch di destinazione con dentro le precedenti già unite. `/issue-flow:plan` stesso, se in
-ricognizione si accorge che la richiesta non sta in una issue, propone di passare a `big-plan`.
+dal branch di destinazione con dentro le precedenti già unite. Non serve sapere in anticipo quale
+delle due usare: `/issue-flow:plan` controlla sempre se la richiesta sta in una issue, e quando
+non ci sta si ferma, avvisa con i numeri misurati e una bozza di divisione, e propone come
+proseguire — passare a `big-plan` (che riparte dalla ricognizione già fatta), aprire solo la
+prima issue, restringere il perimetro, o tenere comunque una issue sola.
 
 Ognuna riparte da sola dopo un `/clear`: lo stato sta nelle checkbox della issue, non nella
 conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrente.

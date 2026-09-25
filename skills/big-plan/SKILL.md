@@ -25,6 +25,19 @@ delle due piattaforme e le loro trappole. **Leggili entrambi prima del primo com
 /issue-flow:big-plan                                # usa una roadmap già approvata in conversazione
 ```
 
+### Quando arrivi da `/issue-flow:plan`
+
+`plan` controlla sempre se la richiesta sta in una issue, e quando non ci sta avvisa l'utente e
+gli propone di passare qui. Se l'utente accetta, questa skill viene caricata nella stessa
+conversazione, e c'è già del lavoro fatto: il tracker verificato, la ricognizione fino al punto
+in cui `plan` si è fermato, una bozza di divisione in issue che l'utente ha visto.
+
+Non rifarlo. Salta il passo 0, **completa** la ricognizione del passo 2 solo dove non basta
+per una roadmap — tipicamente l'architettura d'insieme e i vincoli trasversali, perché `plan`
+guardava da vicino il primo pezzo — e al passo 3 parti dalla bozza di `plan` invece che da zero:
+correggila dove la ricognizione completa lo richiede, e nel riassunto del passo 4 di' cosa è
+cambiato rispetto alla bozza che l'utente aveva visto.
+
 ## Tu sei l'orchestratore
 
 Definisci la roadmap, prendi le decisioni con l'utente, apri la madre, **deleghi** la scrittura

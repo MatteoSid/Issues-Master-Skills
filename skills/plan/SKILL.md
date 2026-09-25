@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Trasforma la richiesta di una singola feature in una issue sul tracker del repo — GitLab o GitHub, secondo il remote — con dentro il piano e la sua roadmap: ricognizione nel codice, bivi di progettazione chiesti all'utente, fasi con checkbox atomiche che il tracker rende spuntabili, e le istruzioni per spuntarle mano a mano. Per uno sviluppo che richiede più issue c'è /issue-flow:big-plan. Trigger: /issue-flow:plan, «apri una issue per…», «scrivi il piano di…», «spunta la roadmap della issue N»."
+description: "Trasforma la richiesta di una singola feature in una issue sul tracker del repo — GitLab o GitHub, secondo il remote — con dentro il piano e la sua roadmap: ricognizione nel codice, bivi di progettazione chiesti all'utente, fasi con checkbox atomiche che il tracker rende spuntabili, e le istruzioni per spuntarle mano a mano. Se il lavoro richiede più issue se ne accorge, avvisa e propone come proseguire, incluso il passaggio a /issue-flow:big-plan. Trigger: /issue-flow:plan, «apri una issue per…», «scrivi il piano di…», «spunta la roadmap della issue N»."
 argument-hint: "<descrizione della modifica>"
 ---
 
@@ -13,7 +13,8 @@ implementa legge quella e basta.
 Questa skill è per **una singola feature**: una issue, da 5 a 8 fasi, una merge request. Se la
 richiesta è uno sviluppo che non ci sta — più incrementi che si uniscono ognuno per conto suo —
 la porta giusta è `/issue-flow:big-plan`, che definisce la roadmap del progetto e la divide in
-issue. Il passo 2 bis dice come accorgersene.
+issue. Non tocca all'utente accorgersene: il passo 2 bis lo controlla sempre, e se la richiesta
+non sta in una issue ti fermi, avvisi e proponi come proseguire.
 
 Il tracker è **GitLab** (`glab`) o **GitHub** (`gh`) a seconda del remote, e la differenza è
 solo di comando: `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — il file `TRACKER.md` nella cartella di
@@ -110,7 +111,8 @@ mode, e vale da qui fino alla creazione della issue:
 
 Se il piano è già stato approvato in questa conversazione — l'utente ha usato il plan mode
 per conto suo e l'ha approvato, oppure è `/issue-flow:plan` senza argomenti — salta il
-riassunto e la domanda di approvazione: la ricognizione è fatta, vai ai passi 4 e 5.
+riassunto e la domanda di approvazione: la ricognizione è fatta, fai il controllo del passo
+2 bis e, se la richiesta sta in una issue, vai ai passi 4 e 5.
 
 ### 2. Ricognizione nel codice — non saltabile
 
@@ -134,22 +136,64 @@ Una richiesta è un'intenzione; la issue è un'istruzione. La differenza la fa q
 Ogni vincolo che scopri e che la richiesta non prevedeva va scritto nella issue, non risolto
 in silenzio.
 
-### 2 bis. Ci sta in una issue?
+### 2 bis. Ci sta in una issue? — non saltabile
 
-Finita la ricognizione, prima di scrivere il piano, conta. La richiesta **non** ci sta in una
-issue se vale una di queste:
+Questo controllo non è facoltativo e non aspetta la fine: lo fai **durante** la ricognizione, e
+appena la risposta è no ti fermi, senza completare una ricognizione di dettaglio che servirebbe
+a una issue che non si aprirà. Vale anche quando il piano arriva già approvato dalla
+conversazione, e in `rivedi <n>` quando la riscrittura fa crescere la issue.
+
+La richiesta **non** ci sta in una issue se vale anche una sola di queste:
 
 - le fasi, verifica e chiusura comprese, sarebbero più di 8;
 - il lavoro si divide naturalmente in incrementi che si possono unire uno alla volta, ognuno
   lasciando il prodotto funzionante — il modello dei dati, poi l'API, poi l'interfaccia;
+- tocca più aree del sistema che si rivedono separatamente — servizi, pacchetti, backend e
+  frontend con un contratto nuovo fra loro;
 - la merge request finale toccherebbe così tanti file da non essere più rivedibile in una
   lettura.
 
-In quel caso fermati e chiedi con `AskUserQuestion`: «Passa a /issue-flow:big-plan»
-(Recommended — la ricognizione fatta fin qui non si butta, è il punto di partenza della
-roadmap), oppure «Restringi il perimetro» (l'utente dice cosa entra in questa issue, il resto
-va nel fuori perimetro). Non comprimere uno sviluppo grosso in fasi enormi per farlo stare in
-otto: una fase che non si chiude in un subagent non si chiude.
+**Non comprimere** uno sviluppo grosso in fasi enormi per farlo stare in otto: una fase che non
+si chiude in un subagent non si chiude. E non decidere da solo di dividerlo: la scelta è
+dell'utente.
+
+#### L'avviso
+
+Prima della domanda, scrivi in chat un avviso breve e concreto:
+
+- **che la richiesta non sta in una issue**, detto in apertura e senza giri di parole;
+- **perché**: i segnali qui sopra che valgono, con i numeri misurati in ricognizione — quante
+  aree, quanti file, quante fasi verrebbero — e non impressioni;
+- **la divisione che proponi**: le issue che ne verrebbero, in ordine di esecuzione, una riga
+  ciascuna con cosa consegna e da quale dipende. È una bozza, non la roadmap: serve all'utente
+  per capire di che dimensioni si parla e per scegliere.
+
+#### La domanda
+
+Poi `AskUserQuestion`, con queste opzioni — nella descrizione di ognuna scrivi in concreto cosa
+succede dopo, con i numeri della bozza:
+
+- **«Passa a /issue-flow:big-plan»** (Recommended): issue madre con la roadmap e le N figlie
+  della bozza, eseguite una alla volta;
+- **«Apri solo la prima issue»**: questa skill prosegue con il primo incremento della bozza; il
+  resto va nel **Fuori perimetro** della issue, un punto per ciascuna delle issue successive,
+  così non si perde;
+- **«Restringi il perimetro»**: l'utente dice cosa entra; si riparte dal controllo con il
+  perimetro nuovo;
+- **«Tieni una issue sola»**: l'utente se ne prende la responsabilità. Si prosegue anche oltre
+  le 8 fasi, e nel **Contesto** della issue va scritto che la dimensione è una scelta
+  dichiarata, con i numeri che l'avrebbero fatta dividere.
+
+#### Come si prosegue
+
+- con **big-plan**: carica subito la skill `issue-flow:big-plan` con il tool `Skill`, nella
+  stessa conversazione, passandole la richiesta originale. La ricognizione fatta fin qui non si
+  butta: `big-plan` la riprende da dove sei arrivato e parte dalla bozza di divisione. Da quel
+  momento vale `big-plan`, non questa skill;
+- con **solo la prima issue** o **restringi**: torna alla ricognizione per il perimetro nuovo —
+  i `file:riga` e i numeri della issue devono riguardare quello che la issue fa davvero — e
+  prosegui dal passo 3;
+- con **una issue sola**: prosegui dal passo 3.
 
 ### 3. Chiedi solo i bivi veri
 
