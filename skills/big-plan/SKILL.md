@@ -188,7 +188,8 @@ controlla che il file non sia vuoto, rimandalo su (`TRACKER.md` §4). Alla fine,
 In poche righe: il link della madre, l'elenco delle figlie con numero, titolo e link nell'ordine
 di esecuzione, cosa hai trovato in ricognizione che la richiesta non prevedeva, le decisioni
 prese da solo con la motivazione, e cosa è rimasto fuori. Chiudi con come si parte:
-`/issue-flow:implement <madre>`, che prende da solo la prima figlia aperta. Non incollare le
+`/issue-flow:implement <madre>`, che prende da solo la prima figlia aperta, o
+`/issue-flow:big-implement <madre>`, che le porta avanti tutte in sequenza. Non incollare le
 issue nella risposta.
 
 ## Come si avanza nel progetto
@@ -205,6 +206,11 @@ e poi la figlia successiva, che parte dal branch di destinazione con dentro il l
 precedenti. La casella della madre si spunta **quando la figlia è unita**, non quando è
 implementata: lo fa `/issue-flow:close --chiudi`, che chiude anche la madre quando l'ultima
 casella è spuntata.
+
+Oppure tutte in una volta con `/issue-flow:big-implement <madre>`: lo stesso giro, una figlia
+alla volta, senza aspettare i merge — ogni figlia nasce dal branch della precedente e la sua
+MR/PR punta lì. Le MR/PR si uniscono poi in ordine, con `/issue-flow:close <figlia> --chiudi`
+dopo ogni merge.
 
 Se durante l'esecuzione una figlia scopre che la roadmap non regge più — una decisione della
 madre si rivela sbagliata, una figlia successiva va rifatta — il rimedio è correggere le issue

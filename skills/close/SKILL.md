@@ -76,6 +76,10 @@ git status --porcelain                # deve essere vuoto
 git log --oneline <base>..HEAD        # i commit delle fasi, uno per fase
 ```
 
+Una figlia portata avanti da `/issue-flow:big-implement` può essere **impilata**: nasce dal
+branch della sorella precedente, non ancora unita, e la sua MR/PR punta lì. In quel caso
+`<base>`, qui e al passo 3, è il branch della sorella.
+
 Se la working tree è sporca, fermati: quel lavoro non è in nessun commit e non finirebbe
 nella MR/PR.
 
@@ -179,6 +183,23 @@ non l'ha già fatto: su GitLab lo fa `--remove-source-branch`, su GitHub l'opzio
 `git push origin --delete <branch>`.
 
 Se lo stato della MR/PR non è `merged`/`MERGED`, non chiudere niente e dillo.
+
+### Le MR/PR impilate su questa
+
+Se `/issue-flow:big-implement` ha impilato altre MR/PR sul branch appena unito, **prima di
+cancellarlo** portale sul branch di destinazione — altrimenti restano a puntare su un branch che
+non esiste più. Di solito il server lo fa da solo quando cancella il branch unito; controlla:
+
+```bash
+glab mr list --target-branch <branch>     # GitLab
+gh   pr list --base          <branch>     # GitHub
+
+glab mr update <n> --target-branch <base> # GitLab — per ognuna rimasta
+gh   pr edit   <n> --base          <base> # GitHub
+```
+
+Su GitHub il `Closes #<figlia>` della PR ritargettata comincia a valere adesso, perché la PR
+ora punta al branch di default.
 
 ### La madre, se la issue è una figlia
 

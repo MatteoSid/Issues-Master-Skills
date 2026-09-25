@@ -64,6 +64,10 @@ sua merge request — pull request su GitHub:
 /issue-flow:close <figlia> --chiudi   # a merge avvenuto: chiude la figlia e la spunta qui
 ```
 
+Oppure tutte in una volta, senza aspettare i merge, con `/issue-flow:big-implement <questa
+issue>`: ogni figlia nasce dal branch della precedente e la sua merge request punta lì; si
+uniscono poi in ordine.
+
 Una casella di questa issue si spunta **quando la figlia è unita**, non quando è implementata:
 lo stato di avanzamento del progetto è quello che sta davvero nel branch di destinazione. La
 figlia successiva parte da lì, con dentro il lavoro delle precedenti.

@@ -14,6 +14,7 @@ esplicito.
 | `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
 | `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
 | `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
+| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta: una alla volta, in ordine, ognuna con il giro di `implement` e la sua MR/PR aperta; senza aspettare i merge, con i branch impilati |
 | `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre |
 
 Più due subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
@@ -73,7 +74,16 @@ Per uno sviluppo che non sta in una issue:
 ```
 
 Le figlie si eseguono una alla volta, ognuna con il suo branch e la sua MR/PR, e ognuna parte
-dal branch di destinazione con dentro le precedenti già unite. Non serve sapere in anticipo quale
+dal branch di destinazione con dentro le precedenti già unite. Oppure tutte in una volta, senza
+aspettare i merge:
+
+```
+/issue-flow:big-implement 20      →  #21 su issue-21 (MR/PR → main), #22 su issue-22 (MR/PR → issue-21), …
+/issue-flow:close 21 --chiudi     →  dopo ogni merge, in ordine: chiude la figlia e sposta la MR/PR dopo su main
+```
+
+Ogni figlia nasce dal branch della precedente e la sua MR/PR punta lì; le MR/PR si uniscono poi
+in ordine, e nessuna viene mai unita dal plugin. Non serve sapere in anticipo quale
 delle due usare: `/issue-flow:plan` controlla sempre se la richiesta sta in una issue, e quando
 non ci sta si ferma, avvisa con i numeri misurati e una bozza di divisione, e propone come
 proseguire — passare a `big-plan` (che riparte dalla ricognizione già fatta), aprire solo la
@@ -82,11 +92,12 @@ prima issue, restringere il perimetro, o tenere comunque una issue sola.
 Ognuna riparte da sola dopo un `/clear`: lo stato sta nelle checkbox della issue, non nella
 conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrente.
 
-`/issue-flow:implement` non ha bisogno di `/goal`: porta con sé un hook `Stop`
-(`scripts/goal-stop.sh`) che a ogni fine turno rilegge la issue dal tracker e rimanda al
+`/issue-flow:implement` e `/issue-flow:big-implement` non hanno bisogno di `/goal`: portano con
+sé un hook `Stop` (`scripts/goal-stop.sh`) che a ogni fine turno rilegge la issue dal tracker e rimanda al
 lavoro finché nel Piano resta una casella aperta o l'ultima fase non è committata. Si ferma
 prima solo per una decisione esplicita — una fase fallita due volte, una scelta che la issue
-non ha preso — e lo dice. Lo stato del goal sta in `.git/issue-flow/`, fuori dai commit.
+non ha preso — e lo dice. Con `big-implement` il goal copre tutte le figlie del progetto. Lo
+stato del goal sta in `.git/issue-flow/`, fuori dai commit.
 
 ## Le tre regole che il plugin non negozia
 

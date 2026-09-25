@@ -77,6 +77,8 @@ Il corpo di una issue passa **sempre da un file**, mai dentro le virgolette dell
 | riscrivi il corpo | `glab issue update <n> --description-file F` | `gh issue edit <n> --body-file F` |
 | chiudi | `glab issue close <n>` | `gh issue close <n>` |
 | apri MR/PR | `glab mr create --source-branch B --target-branch <base> --title T --description-file F --yes` | `gh pr create --head B --base <base> --title T --body-file F` |
+| MR/PR che puntano a un branch | `glab mr list --target-branch B` | `gh pr list --base B` |
+| cambia il target di una MR/PR | `glab mr update <n> --target-branch <base>` | `gh pr edit <n> --base <base>` |
 | stato della MR/PR | `glab mr view <B> --output json --jq '.state'` → `merged` | `gh pr view <B> --json state --jq '.state'` → `MERGED` |
 
 ## 5. Le differenze che mordono
@@ -107,7 +109,9 @@ toglie il problema alla radice, ed è innocuo se i `\r` non ci sono.
 
 **`gh pr create` non ha `--related-issue` né `--remove-source-branch`.** Il collegamento alla
 issue si fa **solo** con `Closes #<numero>` come prima riga del corpo — su GitHub chiude la
-issue al merge se la PR punta al branch di default del repo. La branch, dopo il merge, si
+issue al merge se la PR punta al branch di default del repo — una PR impilata da
+`/issue-flow:big-implement`, che punta al branch di una sorella, chiude la sua issue solo dopo
+essere stata ritargettata sul branch di default. La branch, dopo il merge, si
 cancella a mano (`git push origin --delete <branch>`) o dall'impostazione «Automatically
 delete head branches» del repo: non è compito di queste skill.
 

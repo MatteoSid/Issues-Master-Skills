@@ -131,6 +131,10 @@ Poi dì all'utente «procedo con #<n> — <titolo>» e ricomincia dal passo 1 co
 figlia. **Mai due figlie nella stessa esecuzione**: ognuna ha il suo branch e la sua MR/PR, e la
 successiva parte dal codice che questa avrà unito.
 
+Per portare avanti tutte le figlie in una volta sola, senza aspettare i merge, c'è
+`/issue-flow:big-implement <madre>`: stessa esecuzione, una figlia alla volta, con i branch
+impilati.
+
 ## 1 ter. La figlia regge ancora?
 
 Una figlia è stata scritta prima che le sorelle da cui dipende fossero implementate: i suoi
@@ -281,7 +285,8 @@ incollare la issue né il diff.
 
 Se era una figlia di un big-plan, dillo anche: quale è la figlia successiva nella madre, e che
 si comincia solo dopo il merge di questa, con `/issue-flow:close <numero> --chiudi` che spunta
-la casella sulla madre.
+la casella sulla madre — oppure che `/issue-flow:big-implement <madre>` porta avanti tutte le
+figlie restanti senza aspettare i merge.
 
 ## Quando fermarsi davvero
 
