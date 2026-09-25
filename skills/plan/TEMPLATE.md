@@ -14,6 +14,8 @@ barre. Quale sia lo dice `TRACKER.md`.
 
 - **Stato:** da fare
 - **Branch previsto:** `issue-<numero>`
+- **Roadmap:** #<numero della madre>   [solo per le figlie di `/issue-flow:big-plan`]
+- **Dipende da:** #<numero>            [solo per le figlie, una riga per sorella da cui dipende]
 
 ## Obiettivo
 

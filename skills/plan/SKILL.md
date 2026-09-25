@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Trasforma una richiesta di modifica in una issue sul tracker del repo — GitLab o GitHub, secondo il remote — con dentro il piano e la sua roadmap: ricognizione nel codice, bivi di progettazione chiesti all'utente, fasi con checkbox atomiche che il tracker rende spuntabili, e le istruzioni per spuntarle mano a mano. Trigger: /issue-flow:plan, «apri una issue per…», «scrivi il piano di…», «spunta la roadmap della issue N»."
+description: "Trasforma la richiesta di una singola feature in una issue sul tracker del repo — GitLab o GitHub, secondo il remote — con dentro il piano e la sua roadmap: ricognizione nel codice, bivi di progettazione chiesti all'utente, fasi con checkbox atomiche che il tracker rende spuntabili, e le istruzioni per spuntarle mano a mano. Per uno sviluppo che richiede più issue c'è /issue-flow:big-plan. Trigger: /issue-flow:plan, «apri una issue per…», «scrivi il piano di…», «spunta la roadmap della issue N»."
 argument-hint: "<descrizione della modifica>"
 ---
 
@@ -9,6 +9,11 @@ argument-hint: "<descrizione della modifica>"
 Non si implementa niente che non sia scritto in una issue. La issue non è un promemoria: è
 **l'istruzione di lavoro**, e contiene sia il piano sia la roadmap che lo esegue. Chi
 implementa legge quella e basta.
+
+Questa skill è per **una singola feature**: una issue, da 5 a 8 fasi, una merge request. Se la
+richiesta è uno sviluppo che non ci sta — più incrementi che si uniscono ognuno per conto suo —
+la porta giusta è `/issue-flow:big-plan`, che definisce la roadmap del progetto e la divide in
+issue. Il passo 2 bis dice come accorgersene.
 
 Il tracker è **GitLab** (`glab`) o **GitHub** (`gh`) a seconda del remote, e la differenza è
 solo di comando: `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — il file `TRACKER.md` nella cartella di
@@ -128,6 +133,23 @@ Una richiesta è un'intenzione; la issue è un'istruzione. La differenza la fa q
 
 Ogni vincolo che scopri e che la richiesta non prevedeva va scritto nella issue, non risolto
 in silenzio.
+
+### 2 bis. Ci sta in una issue?
+
+Finita la ricognizione, prima di scrivere il piano, conta. La richiesta **non** ci sta in una
+issue se vale una di queste:
+
+- le fasi, verifica e chiusura comprese, sarebbero più di 8;
+- il lavoro si divide naturalmente in incrementi che si possono unire uno alla volta, ognuno
+  lasciando il prodotto funzionante — il modello dei dati, poi l'API, poi l'interfaccia;
+- la merge request finale toccherebbe così tanti file da non essere più rivedibile in una
+  lettura.
+
+In quel caso fermati e chiedi con `AskUserQuestion`: «Passa a /issue-flow:big-plan»
+(Recommended — la ricognizione fatta fin qui non si butta, è il punto di partenza della
+roadmap), oppure «Restringi il perimetro» (l'utente dice cosa entra in questa issue, il resto
+va nel fuori perimetro). Non comprimere uno sviluppo grosso in fasi enormi per farlo stare in
+otto: una fase che non si chiude in un subagent non si chiude.
 
 ### 3. Chiedi solo i bivi veri
 
@@ -262,6 +284,12 @@ Non questa skill: `/issue-flow:implement <n>` la prende, manda una fase per suba
 le caselle mano a mano; poi `/issue-flow:close <n>` verifica l'albero finale, apre la MR/PR e,
 a merge avvenuto, chiude la issue. Scrivi la roadmap sapendo che a leggerla sarà un agente che
 non ha assistito a niente — è la ragione per cui le fasi devono essere autonome.
+
+Le stesse regole valgono per le issue figlie di `/issue-flow:big-plan`: le scrive il subagent
+`issue-flow:issue-writer` seguendo questa skill e `TEMPLATE.md`, con in più in testa le righe
+**Roadmap** e **Dipende da**. `/issue-flow:plan rivedi <n>` funziona anche su di loro: se la
+figlia ha la riga **Roadmap**, rileggi la madre prima di riscriverla e non contraddirne le
+decisioni.
 
 ## Come si scrive
 

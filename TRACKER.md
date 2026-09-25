@@ -1,9 +1,9 @@
 # TRACKER — GitLab o GitHub, e cosa cambia
 
-Le tre skill di questo plugin — `/issue-flow:plan`, `/issue-flow:implement`,
-`/issue-flow:close` — lavorano su un tracker che può essere **GitLab** (`glab`) o **GitHub**
+Le quattro skill di questo plugin — `/issue-flow:plan`, `/issue-flow:big-plan`,
+`/issue-flow:implement`, `/issue-flow:close` — lavorano su un tracker che può essere **GitLab** (`glab`) o **GitHub**
 (`gh`). Il piano, la roadmap, le regole di scrittura e il modo di spuntare le caselle non
-cambiano: cambiano il comando e due parole. Questo file è il riferimento unico, e le tre
+cambiano: cambiano il comando e due parole. Questo file è il riferimento unico, e le
 skill lo citano invece di ripetersi.
 
 ## 1. Quale tracker — si deduce, non si chiede
@@ -33,7 +33,7 @@ installato. In quel secondo caso dillo con il rimedio: `gh` si installa da
 Se ci sono più remote e `origin` non è quello del tracker, vale il remote che l'utente indica:
 è un caso da chiedere, non da dedurre.
 
-## 2. Il tracker risponde — passo 0 di tutte e tre le skill
+## 2. Il tracker risponde — passo 0 di tutte le skill
 
 | | GitLab | GitHub |
 |---|---|---|
@@ -118,6 +118,12 @@ confronta senza distinzione di maiuscole, o l'esito è sempre «non ancora unita
 unita, GitHub l'ha chiusa da solo. Prima di chiudere, guarda lo stato: se è già `CLOSED`,
 resta solo da portare la riga **Stato:** nel corpo. Chiudere una issue già chiusa non è un
 errore, ma dire all'utente di averla chiusa tu sì.
+
+**Una checkbox che cita una issue la mostra viva.** Nella madre di `/issue-flow:big-plan` le
+righe `- [ ] #13 titolo` sono task list come le altre — si contano con gli stessi `grep` — e in
+più entrambe le piattaforme rendono `#13` come link con il titolo e lo stato della issue. Lo
+stato mostrato però è quello della issue, non la spunta: la casella la gira solo
+`/issue-flow:close --chiudi`, e il conteggio che vale resta quello nel corpo.
 
 **`--yes` è di `glab`.** `gh` non lo ha e non serve: passando `--title` e `--body-file` (e
 `--head` per la PR, con la branch già pushata) non chiede niente.

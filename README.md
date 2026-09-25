@@ -1,7 +1,7 @@
 # Issue Flow
 
 Dalla richiesta alla merge request passando per una issue che contiene il piano **e** la
-roadmap che lo esegue. Tre skill che si passano il lavoro, su **GitLab** (`glab`) o **GitHub**
+roadmap che lo esegue. Quattro skill che si passano il lavoro, su **GitLab** (`glab`) o **GitHub**
 (`gh`) indifferentemente: la piattaforma si deduce dal remote.
 
 Il principio che tiene insieme tutto: *la issue deve essere eseguibile da un agente che non ha
@@ -11,12 +11,15 @@ esplicito.
 
 | skill | cosa fa |
 |---|---|
-| `/issue-flow:plan` | ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
-| `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase |
-| `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue |
+| `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
+| `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
+| `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; sulla madre prende la prima figlia aperta |
+| `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre |
 
-Più il subagent `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
-toccare la issue: quello lo fa l'orchestratore, dopo aver verificato l'output vero.
+Più due subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
+toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output vero — e
+`issue-flow:issue-writer`, che scrive il corpo di una issue figlia di `big-plan` in un file e non
+può creare issue: le crea l'orchestratore, in ordine, dopo averle controllate.
 
 ## Installazione
 
@@ -57,6 +60,20 @@ ricognizione — script di `package.json`, target del `Makefile`, `pyproject.tom
 /issue-flow:close 12                                             →  apre la MR/PR
 /issue-flow:close 12 --chiudi                                    →  a merge avvenuto, chiude la issue
 ```
+
+Per uno sviluppo che non sta in una issue:
+
+```
+/issue-flow:big-plan sistema di notifiche con preferenze utente  →  madre #20, figlie #21 #22 #23
+/issue-flow:implement 20                                         →  prende la prima figlia aperta, #21
+/issue-flow:close 21                                             →  apre la MR/PR di #21
+/issue-flow:close 21 --chiudi                                    →  chiude #21 e la spunta su #20
+/issue-flow:implement 20                                         →  ora tocca a #22, e così via
+```
+
+Le figlie si eseguono una alla volta, ognuna con il suo branch e la sua MR/PR, e ognuna parte
+dal branch di destinazione con dentro le precedenti già unite. `/issue-flow:plan` stesso, se in
+ricognizione si accorge che la richiesta non sta in una issue, propone di passare a `big-plan`.
 
 Ognuna riparte da sola dopo un `/clear`: lo stato sta nelle checkbox della issue, non nella
 conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrente.

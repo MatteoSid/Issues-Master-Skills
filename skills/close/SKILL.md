@@ -1,6 +1,6 @@
 ---
 name: close
-description: "Porta in merge request — pull request su GitHub — il lavoro di una issue già implementata: controlla che la roadmap sia davvero tutta spuntata, rifà la verifica sull'albero finale, pusha il branch e apre la MR/PR con Closes #numero. A merge avvenuto chiude la issue. Trigger: /issue-flow:close, «apri la merge request della issue N», «chiudi la issue N»."
+description: "Porta in merge request — pull request su GitHub — il lavoro di una issue già implementata: controlla che la roadmap sia davvero tutta spuntata, rifà la verifica sull'albero finale, pusha il branch e apre la MR/PR con Closes #numero. A merge avvenuto chiude la issue e, se è figlia di un /issue-flow:big-plan, la spunta sulla madre. Trigger: /issue-flow:close, «apri la merge request della issue N», «chiudi la issue N»."
 argument-hint: "<numero> [--chiudi]"
 ---
 
@@ -180,10 +180,40 @@ non l'ha già fatto: su GitLab lo fa `--remove-source-branch`, su GitHub l'opzio
 
 Se lo stato della MR/PR non è `merged`/`MERGED`, non chiudere niente e dillo.
 
+### La madre, se la issue è una figlia
+
+Se in testa al corpo della issue c'è `**Roadmap:** #<madre>`, la figlia appena chiusa va
+spuntata sulla madre: è l'unico posto dove si legge a che punto è il progetto.
+
+```bash
+# GitLab
+glab issue view <madre> --output json --jq '.description' > "$SCRATCH/madre.md"
+# GitHub
+gh issue view <madre> --json body --jq '.body' > "$SCRATCH/madre.md" && sed -i 's/\r$//' "$SCRATCH/madre.md"
+
+# giri in `- [x]` SOLO la riga `- [ ] #<numero>` della sezione Issue
+# porti la riga «**Stato:**» della madre a `in corso — k di M issue unite`
+
+glab issue update <madre> --description-file "$SCRATCH/madre.md"   # GitLab
+gh   issue edit   <madre> --body-file        "$SCRATCH/madre.md"   # GitHub
+```
+
+Le regole di sempre: rileggi dal server, controlla che il file non sia vuoto, tocca solo quelle
+due righe. La MR/PR della figlia porta `Closes #<figlia>` e **mai** il numero della madre: la
+madre non si chiude al merge di una figlia.
+
+Se dopo la spunta tutte le caselle della sezione Issue sono `- [x]`, il progetto è finito:
+porta lo **Stato:** della madre a `chiusa — completata il GG/MM/AAAA` e chiudila
+(`glab issue close <madre>`, `gh issue close <madre>`). Altrimenti, nella consegna, nomina la
+figlia successiva: la prima `- [ ] #<n>` rimasta, da cominciare con
+`/issue-flow:implement <n>` — o `/issue-flow:implement <madre>`, che la trova da solo.
+
 ## 5. Consegna
 
 Il link della MR/PR, cosa hai verificato con i numeri veri, i file di documentazione che hai
-dovuto aggiornare, e quello che hai trovato non a posto e hai sistemato per poterla aprire. Se
+dovuto aggiornare, e quello che hai trovato non a posto e hai sistemato per poterla aprire.
+Dopo un `--chiudi` su una figlia, a che punto è la madre (`k di M issue unite`) e quale figlia
+viene dopo. Se
 ti sei fermato, la ragione in una riga e cosa serve per sbloccare.
 
 ## Quando fermarsi davvero

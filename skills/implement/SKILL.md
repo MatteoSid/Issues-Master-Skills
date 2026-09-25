@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Prende una issue dal tracker del repo — GitLab o GitHub — e ne implementa la roadmap: una fase per subagent, le checkbox spuntate sulla issue mano a mano che il lavoro si chiude, un commit per fase. Si ferma al commit dell'ultima fase: la merge request la apre /issue-flow:close. Trigger: /issue-flow:implement, «implementa la issue N», «porta a termine la issue N», «lavora la issue N»."
+description: "Prende una issue dal tracker del repo — GitLab o GitHub — e ne implementa la roadmap: una fase per subagent, le checkbox spuntate sulla issue mano a mano che il lavoro si chiude, un commit per fase. Si ferma al commit dell'ultima fase: la merge request la apre /issue-flow:close. Con il numero di una issue madre di /issue-flow:big-plan esegue la prima figlia non ancora unita. Trigger: /issue-flow:implement, «implementa la issue N», «porta a termine la issue N», «lavora la issue N»."
 argument-hint: "<numero> [--da N]"
 ---
 
@@ -14,6 +14,7 @@ si salta lavoro che prevede.
 
 ```
 /issue-flow:implement <numero>         # esegue la issue dalla prima fase non spuntata
+/issue-flow:implement <madre>          # issue madre di big-plan: esegue la prima figlia aperta
 /issue-flow:implement <numero> --da 3  # riparte dalla fase 3, ignorando le checkbox
 /issue-flow:implement                  # deduce il numero dal branch corrente
 ```
@@ -62,6 +63,10 @@ jq -r '.body'  "$SCRATCH/issue.json" | sed 's/\r$//' > "$SCRATCH/roadmap.md"
 Controlla che `roadmap.md` non sia vuoto prima di andare avanti: se lo è, hai pescato il
 campo dell'altra piattaforma.
 
+Se in testa al corpo c'è `**Tipo:** roadmap`, è la madre di un `/issue-flow:big-plan` e non
+si implementa: vai al passo 1 bis. Se c'è `**Roadmap:** #<madre>`, è una figlia: vale tutto
+quello che segue, più il passo 1 ter prima del branch.
+
 Leggila tutta, non solo il Piano: **Obiettivo**, **Contesto** e **Fuori perimetro** sono ciò
 che impedisce ai subagent di reinventare le decisioni già prese, e vanno passati loro.
 
@@ -73,6 +78,46 @@ Poi ricava, e dillo all'utente prima di partire:
   spuntate, e da quale fase riparti;
 - se la issue non ha fasi con checkbox, **fermati**: non è una issue eseguibile. Riportalo e
   proponi `/issue-flow:plan rivedi <numero>`.
+
+## 1 bis. La madre: quale figlia tocca
+
+Le figlie si eseguono **una alla volta, in ordine**. Nella sezione **Issue** della madre, la
+prima riga `- [ ] #<n>` non spuntata è la figlia da eseguire:
+
+```bash
+grep -n '^[[:space:]]*- \[ \] #[0-9]' "$SCRATCH/roadmap.md" | head -1
+```
+
+Prima di prenderla, guarda che le figlie da cui dipende — la riga `· dipende da #<k>` nella
+madre, `**Dipende da:**` nella figlia — siano **chiuse** sul tracker
+(`glab issue view <k> --output json --jq '.state'` → `closed`, `gh issue view <k> --json state
+--jq '.state'` → `CLOSED`). Una figlia con una dipendenza ancora aperta non si comincia: dillo
+all'utente e indica quale va chiusa prima — di solito è una MR/PR in attesa di merge.
+
+Se tutte le caselle della madre sono spuntate, il progetto è finito: dillo, e se la madre è
+ancora aperta proponi di chiuderla. Se una casella è vuota ma la figlia è già chiusa sul
+tracker, la madre è rimasta indietro: segnalalo invece di rieseguire la figlia.
+
+Poi dì all'utente «procedo con #<n> — <titolo>» e ricomincia dal passo 1 con il numero della
+figlia. **Mai due figlie nella stessa esecuzione**: ognuna ha il suo branch e la sua MR/PR, e la
+successiva parte dal codice che questa avrà unito.
+
+## 1 ter. La figlia regge ancora?
+
+Una figlia è stata scritta prima che le sorelle da cui dipende fossero implementate: i suoi
+`file:riga` e i punti d'aggancio marcati «nasce con #<k>» descrivevano un codice che adesso è
+diverso. Prima di delegare la prima fase, controlla:
+
+- le dipendenze sono **chiuse** sul tracker e il loro lavoro è **nel branch di destinazione**
+  (`git log --oneline <base> | grep '#<k>'`, o i file che dovevano far nascere esistono);
+- i punti d'aggancio «nasce con #<k>» esistono davvero, con il nome che la figlia si aspetta;
+- i `file:riga` della prima fase puntano ancora a quello che la issue descrive.
+
+Se qualcosa non regge in modo sostanziale — un file che non esiste, un'interfaccia nata con
+un'altra forma, una decisione che la sorella ha cambiato in corsa — **fermati** e proponi
+`/issue-flow:plan rivedi <numero>`. Le righe solo spostate di qualche posizione non sono un
+motivo per fermarsi: il subagent le riverifica comunque. Il rimedio giusto è correggere la
+issue prima del codice.
 
 ## 2. Il branch
 
@@ -87,6 +132,10 @@ git switch <branch> 2>/dev/null \
 ```
 
 Se ci sono modifiche non committate, fermati e chiedi cosa farne.
+
+Per una figlia di un big-plan il branch nasce **sempre** dal branch di destinazione appena
+aggiornato — il `git pull --ff-only` qui sopra — perché è lì che stanno le sorelle già unite.
+Mai dal branch di una sorella non ancora unita.
 
 ## 3. Il ciclo, una fase alla volta
 
@@ -185,6 +234,10 @@ Poche righe: le fasi chiuse con i loro commit (`git log --oneline`), le checkbox
 vuote con il motivo, le deviazioni scritte nella roadmap, i problemi che i subagent hanno
 visto fuori dal loro perimetro, e come si prosegue: `/issue-flow:close <numero>`. Non
 incollare la issue né il diff.
+
+Se era una figlia di un big-plan, dillo anche: quale è la figlia successiva nella madre, e che
+si comincia solo dopo il merge di questa, con `/issue-flow:close <numero> --chiudi` che spunta
+la casella sulla madre.
 
 ## Quando fermarsi davvero
 
