@@ -2,6 +2,11 @@
 name: implement
 description: "Prende una issue dal tracker del repo — GitLab o GitHub — e ne implementa la roadmap: una fase per subagent, le checkbox spuntate sulla issue mano a mano che il lavoro si chiude, un commit per fase. Si ferma al commit dell'ultima fase: la merge request la apre /issue-flow:close. Con il numero di una issue madre di /issue-flow:big-plan esegue la prima figlia non ancora unita. Trigger: /issue-flow:implement, «implementa la issue N», «porta a termine la issue N», «lavora la issue N»."
 argument-hint: "<numero> [--da N]"
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/scripts/goal-stop.sh"
 ---
 
 # /issue-flow:implement
@@ -28,6 +33,30 @@ servono, mentre tu tieni la visione dell'insieme — a che punto è la roadmap, 
 la fase precedente, cosa manca — senza riempirti dei dettagli di ogni singolo file. Il motivo
 secondario è strutturale: un subagent non può spawnarne un altro, quindi il ciclo deve stare
 qui.
+
+## Lavori in modalità goal
+
+Questa skill si comporta come un `/goal` con la condizione già scritta: **non si ferma finché
+la roadmap non è completa**. Lo fa un hook `Stop` del plugin (`scripts/goal-stop.sh`) che a
+ogni fine turno rilegge la issue dal tracker: finché nel Piano c'è una `- [ ]`, o l'ultima
+fase non è committata, ti rimanda al lavoro dicendoti da quale fase ripartire.
+
+L'hook legge lo stato da una cartella dentro `.git`, che non finisce mai in un commit:
+
+```bash
+GOAL_DIR=$(git rev-parse --path-format=absolute --git-path issue-flow)
+```
+
+- `$GOAL_DIR/goal` — il numero della issue in lavorazione. Lo scrivi al passo 2; a roadmap
+  completa lo cancella l'hook. Finché c'è, il turno non si chiude.
+- `$GOAL_DIR/in-volo` — c'è un subagent di fase al lavoro. Lo crei subito prima di delegare
+  e lo cancelli appena torna: in mezzo puoi chiudere il turno, perché ti risveglia la sua
+  notifica.
+
+Per fermarti prima della fine — i casi di «Quando fermarsi davvero», o una checkbox che resta
+vuota — **cancelli tu `$GOAL_DIR/goal`** e dici all'utente perché. È voluto: lo stop è una
+decisione esplicita, non un turno che finisce per caso a metà roadmap. Se ti fermi prima del
+passo 2, il file non esiste ancora e non c'è niente da cancellare.
 
 ## 0. Quale tracker, e risponde
 
@@ -133,6 +162,16 @@ git switch <branch> 2>/dev/null \
 
 Se ci sono modifiche non committate, fermati e chiedi cosa farne.
 
+Sul branch giusto, attiva il goal — con il numero della issue che stai eseguendo, che per una
+madre è quello della figlia:
+
+```bash
+mkdir -p "$GOAL_DIR" && echo <numero> > "$GOAL_DIR/goal" && rm -f "$GOAL_DIR/in-volo"
+```
+
+Il `rm` toglie un `in-volo` rimasto da una sessione interrotta, che altrimenti lascerebbe il
+goal sempre spento.
+
 Per una figlia di un big-plan il branch nasce **sempre** dal branch di destinazione appena
 aggiornato — il `git pull --ff-only` qui sopra — perché è lì che stanno le sorelle già unite.
 Mai dal branch di una sorella non ancora unita.
@@ -152,6 +191,9 @@ Nel prompt vanno, integrali e non riassunti:
 - il numero della fase e il suo **testo integrale**: cappello, elenco dei file, tutte le
   checkbox con i frammenti di codice sotto, la riga «Fatto quando»;
 - cosa hanno lasciato le fasi precedenti, se hanno deviato dal piano scritto.
+
+Subito prima dell'invocazione `touch "$GOAL_DIR/in-volo"`, e appena il subagent torna
+`rm -f "$GOAL_DIR/in-volo"`, prima della verifica.
 
 Regole non negoziabili:
 
@@ -204,6 +246,8 @@ non sia vuoto prima di rimandarlo su.
 Se durante l'implementazione una decisione è cambiata, **riscrivi la riga** invece di
 spuntarla: la roadmap deve dire cosa è stato fatto davvero. Se il subagent non è riuscito a
 completare una checkbox, resta `- [ ]` e il motivo va detto all'utente alla fine.
+Con una checkbox vuota la roadmap non risulta mai completa: a fine lavoro cancella tu
+`$GOAL_DIR/goal`, sennò l'hook ti rimanda indietro.
 
 ### Committa
 
@@ -245,5 +289,7 @@ Fermati e chiedi, invece di proseguire, se: la stessa fase fallisce due volte; u
 richiede una decisione che la issue non ha preso; il lavoro tocca in modo sostanziale file
 che la issue non prevedeva; una verifica non è eseguibile su questa macchina (porta, servizio
 o credenziale mancanti); la issue è in contraddizione con il codice che trovi.
+
+Prima di fermarti, `rm -f "$GOAL_DIR/goal"`: altrimenti l'hook ti rimanda al lavoro.
 
 Il rimedio giusto è quasi sempre correggere la issue prima di correggere il codice.

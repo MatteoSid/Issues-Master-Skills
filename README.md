@@ -13,7 +13,7 @@ esplicito.
 |---|---|
 | `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
 | `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
-| `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; sulla madre prende la prima figlia aperta |
+| `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
 | `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre |
 
 Più due subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
@@ -32,7 +32,8 @@ Il `marketplace add` clona con le credenziali git della macchina, quindi va bene
 `git@github.com:MatteoSid/Issues-Master-Skills.git`.
 
 Serve `glab` o `gh` installato e autenticato — le skill lo controllano al passo 0 e si fermano
-con il comando da lanciare se manca. Il login è interattivo e Claude non può farlo.
+con il comando da lanciare se manca. Il login è interattivo e Claude non può farlo. Serve
+anche `jq`, che usa l'hook di `implement`.
 
 ## Configurazione
 
@@ -80,6 +81,12 @@ prima issue, restringere il perimetro, o tenere comunque una issue sola.
 
 Ognuna riparte da sola dopo un `/clear`: lo stato sta nelle checkbox della issue, non nella
 conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrente.
+
+`/issue-flow:implement` non ha bisogno di `/goal`: porta con sé un hook `Stop`
+(`scripts/goal-stop.sh`) che a ogni fine turno rilegge la issue dal tracker e rimanda al
+lavoro finché nel Piano resta una casella aperta o l'ultima fase non è committata. Si ferma
+prima solo per una decisione esplicita — una fase fallita due volte, una scelta che la issue
+non ha preso — e lo dice. Lo stato del goal sta in `.git/issue-flow/`, fuori dai commit.
 
 ## Le tre regole che il plugin non negozia
 
