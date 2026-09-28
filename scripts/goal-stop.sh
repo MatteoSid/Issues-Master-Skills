@@ -4,7 +4,9 @@
 # Non lascia chiudere il turno finché una delle issue in lavorazione ha checkbox aperte nel Piano.
 # Lo stato sta in <git-dir>/issue-flow/, mai committato:
 #   goal     i numeri delle issue in lavorazione, uno per riga — uno solo per implement, tutte
-#            le figlie del progetto per big-implement; senza, l'hook non fa nulla
+#            le figlie del progetto e la madre per big-implement (la madre non ha Piano: contano
+#            le caselle della sezione Issue, spuntate quando una figlia è unita nel suo branch);
+#            senza, l'hook non fa nulla
 #   in-volo  c'è un subagent di fase al lavoro — la sua notifica risveglierà l'orchestratore
 #   blocchi  quante volte di fila l'hook ha bloccato con lo stesso stato
 #
@@ -76,7 +78,7 @@ fi
 if [ "$aperte" -eq 0 ]; then
   motivo="Roadmap tutta spuntata, ma ci sono modifiche non committate: committa l'ultima fase secondo /issue-flow:implement."
 else
-  motivo="Roadmap di #$prima non completa: $aperte checkbox aperte${fase:+, la prima in «$fase»}. Prosegui con la fase successiva secondo /issue-flow:implement (o /issue-flow:big-implement, se stai portando avanti un progetto)."
+  motivo="Roadmap di #$prima non completa: $aperte checkbox aperte${fase:+, la prima in «$fase»}. Prosegui secondo /issue-flow:implement (o /issue-flow:big-implement, se stai portando avanti un progetto: la fase successiva, o la MR/PR e il merge nel branch della madre della figlia finita)."
 fi
 motivo+=" Se sei in uno dei casi di «Quando fermarsi davvero», o lasci una checkbox vuota per un motivo, rimuovi $dir/goal e spiega all'utente perché ti fermi."
 

@@ -132,8 +132,9 @@ figlia. **Mai due figlie nella stessa esecuzione**: ognuna ha il suo branch e la
 successiva parte dal codice che questa avrà unito.
 
 Per portare avanti tutte le figlie in una volta sola, senza aspettare i merge, c'è
-`/issue-flow:big-implement <madre>`: stessa esecuzione, una figlia alla volta, con i branch
-impilati.
+`/issue-flow:big-implement <madre>`: stessa esecuzione, una figlia alla volta, sul branch della
+madre — ogni figlia ci entra da sola, e al branch di destinazione arriva solo la MR/PR della
+madre.
 
 ## 1 ter. La figlia regge ancora?
 
@@ -141,7 +142,7 @@ Una figlia è stata scritta prima che le sorelle da cui dipende fossero implemen
 `file:riga` e i punti d'aggancio marcati «nasce con #<k>» descrivevano un codice che adesso è
 diverso. Prima di delegare la prima fase, controlla:
 
-- le dipendenze sono **chiuse** sul tracker e il loro lavoro è **nel branch di destinazione**
+- le dipendenze sono **chiuse** sul tracker e il loro lavoro è **nella base** del passo 2
   (`git log --oneline <base> | grep '#<k>'`, o i file che dovevano far nascere esistono);
 - i punti d'aggancio «nasce con #<k>» esistono davvero, con il nome che la figlia si aspetta;
 - i `file:riga` della prima fase puntano ancora a quello che la issue descrive.
@@ -176,8 +177,14 @@ mkdir -p "$GOAL_DIR" && echo <numero> > "$GOAL_DIR/goal" && rm -f "$GOAL_DIR/in-
 Il `rm` toglie un `in-volo` rimasto da una sessione interrotta, che altrimenti lascerebbe il
 goal sempre spento.
 
-Per una figlia di un big-plan il branch nasce **sempre** dal branch di destinazione appena
-aggiornato — il `git pull --ff-only` qui sopra — perché è lì che stanno le sorelle già unite.
+Per una figlia di un big-plan il branch nasce **sempre** dal branch in cui stanno le sorelle
+già unite, appena aggiornato — il `git pull --ff-only` qui sopra:
+
+- il **branch della madre**, `${user_config.branch_prefix}<madre>`, se esiste su `origin`
+  (`git ls-remote --exit-code --heads origin <branch-madre>`): il progetto è portato avanti da
+  `/issue-flow:big-implement`, e le sorelle si uniscono lì;
+- il branch di destinazione altrimenti.
+
 Mai dal branch di una sorella non ancora unita.
 
 ## 3. Il ciclo, una fase alla volta
@@ -286,7 +293,8 @@ incollare la issue né il diff.
 Se era una figlia di un big-plan, dillo anche: quale è la figlia successiva nella madre, e che
 si comincia solo dopo il merge di questa, con `/issue-flow:close <numero> --chiudi` che spunta
 la casella sulla madre — oppure che `/issue-flow:big-implement <madre>` porta avanti tutte le
-figlie restanti senza aspettare i merge.
+figlie restanti senza aspettare i merge. Se la figlia è nata dal branch della madre,
+`/issue-flow:close <numero>` la unisce lì da solo, e non c'è merge da aspettare.
 
 ## Quando fermarsi davvero
 

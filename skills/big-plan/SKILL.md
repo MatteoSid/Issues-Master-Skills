@@ -208,9 +208,9 @@ implementata: lo fa `/issue-flow:close --chiudi`, che chiude anche la madre quan
 casella è spuntata.
 
 Oppure tutte in una volta con `/issue-flow:big-implement <madre>`: lo stesso giro, una figlia
-alla volta, senza aspettare i merge — ogni figlia nasce dal branch della precedente e la sua
-MR/PR punta lì. Le MR/PR si uniscono poi in ordine, con `/issue-flow:close <figlia> --chiudi`
-dopo ogni merge.
+alla volta, sul branch della madre — ogni figlia nasce da lì e ci rientra con la sua MR/PR, che
+`close` unisce da solo dopo i controlli di sempre. Alla fine la MR/PR della madre porta tutto
+nel branch di destinazione, e la unisce l'utente; poi `/issue-flow:close <madre> --chiudi`.
 
 Se durante l'esecuzione una figlia scopre che la roadmap non regge più — una decisione della
 madre si rivela sbagliata, una figlia successiva va rifatta — il rimedio è correggere le issue

@@ -14,8 +14,8 @@ esplicito.
 | `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
 | `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
 | `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
-| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta: una alla volta, in ordine, ognuna con il giro di `implement` e la sua MR/PR aperta; senza aspettare i merge, con i branch impilati |
-| `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre |
+| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta sul branch della madre: una alla volta, in ordine, ognuna con il giro di `implement` e di `close`, che la unisce da sola nel branch della madre; alla fine apre la MR/PR della madre, che unisci tu |
+| `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre; la figlia di un progetto con il branch della madre la unisce lì da sola |
 
 Più due subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
 toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output vero — e
@@ -78,12 +78,15 @@ dal branch di destinazione con dentro le precedenti già unite. Oppure tutte in 
 aspettare i merge:
 
 ```
-/issue-flow:big-implement 20      →  #21 su issue-21 (MR/PR → main), #22 su issue-22 (MR/PR → issue-21), …
-/issue-flow:close 21 --chiudi     →  dopo ogni merge, in ordine: chiude la figlia e sposta la MR/PR dopo su main
+/issue-flow:big-implement 20      →  branch issue-20 da main; #21, #22, #23 nascono da issue-20
+                                     e ci rientrano da sole; poi la MR/PR issue-20 → main
+/issue-flow:close 20 --chiudi     →  dopo che hai unito la MR/PR della madre: chiude #20
 ```
 
-Ogni figlia nasce dal branch della precedente e la sua MR/PR punta lì; le MR/PR si uniscono poi
-in ordine, e nessuna viene mai unita dal plugin. Non serve sapere in anticipo quale
+Ogni figlia passa per `close` come sempre — verifica sull'albero finale, documentazione, MR/PR —
+ma verso il branch della madre, e lì il plugin la unisce da solo: è il cantiere del progetto,
+non il prodotto. Al branch di destinazione arriva solo la MR/PR della madre, e quella non la
+unisce mai il plugin: la approvi e la unisci tu. Non serve sapere in anticipo quale
 delle due usare: `/issue-flow:plan` controlla sempre se la richiesta sta in una issue, e quando
 non ci sta si ferma, avvisa con i numeri misurati e una bozza di divisione, e propone come
 proseguire — passare a `big-plan` (che riparte dalla ricognizione già fatta), aprire solo la
@@ -96,7 +99,8 @@ conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrent
 sé un hook `Stop` (`scripts/goal-stop.sh`) che a ogni fine turno rilegge la issue dal tracker e rimanda al
 lavoro finché nel Piano resta una casella aperta o l'ultima fase non è committata. Si ferma
 prima solo per una decisione esplicita — una fase fallita due volte, una scelta che la issue
-non ha preso — e lo dice. Con `big-implement` il goal copre tutte le figlie del progetto. Lo
+non ha preso — e lo dice. Con `big-implement` il goal copre tutte le figlie del progetto e la madre, fino all'ultimo
+merge nel branch della madre. Lo
 stato del goal sta in `.git/issue-flow/`, fuori dai commit.
 
 ## Le tre regole che il plugin non negozia

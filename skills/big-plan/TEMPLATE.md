@@ -65,14 +65,17 @@ sua merge request — pull request su GitHub:
 ```
 
 Oppure tutte in una volta, senza aspettare i merge, con `/issue-flow:big-implement <questa
-issue>`: ogni figlia nasce dal branch della precedente e la sua merge request punta lì; si
-uniscono poi in ordine.
+issue>`: questa issue ha il suo branch, ogni figlia nasce da lì e ci rientra con una merge
+request unita in automatico dopo i controlli di `/issue-flow:close`; alla fine la merge request
+di questa issue porta tutto il progetto nel branch di destinazione, e la unisce solo chi la
+approva. A merge avvenuto, `/issue-flow:close <questa issue> --chiudi`.
 
-Una casella di questa issue si spunta **quando la figlia è unita**, non quando è implementata:
-lo stato di avanzamento del progetto è quello che sta davvero nel branch di destinazione. La
-figlia successiva parte da lì, con dentro il lavoro delle precedenti.
+Una casella di questa issue si spunta **quando la figlia è unita** — nel branch di
+destinazione, o nel branch di questa issue — non quando è implementata. La figlia successiva
+parte da lì, con dentro il lavoro delle precedenti.
 
-Quando l'ultima casella è spuntata questa issue si chiude, e lo **Stato:** diventa
+Quando l'ultimo lavoro arriva nel branch di destinazione — con l'ultima figlia, o con la merge
+request di questa issue — questa issue si chiude, e lo **Stato:** diventa
 `chiusa — completata il GG/MM/AAAA`. Fino ad allora è `in corso — k di M issue unite`.
 
 Se durante l'esecuzione la roadmap smette di reggere — una decisione si rivela sbagliata, una
