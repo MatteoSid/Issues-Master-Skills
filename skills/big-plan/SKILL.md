@@ -38,6 +38,30 @@ guardava da vicino il primo pezzo — e al passo 3 parti dalla bozza di `plan` i
 correggila dove la ricognizione completa lo richiede, e nel riassunto del passo 4 di' cosa è
 cambiato rispetto alla bozza che l'utente aveva visto.
 
+### Quando arrivi da `/issue-flow:roadmap`
+
+`roadmap` propone i prossimi passi del progetto leggendone la documentazione, e quando l'utente
+sceglie «Crea le issue» carica questa skill nella stessa conversazione. Anche qui c'è lavoro
+fatto: il tracker verificato, le fonti lette, una roadmap **approvata** dall'utente, con un passo
+per figlia, le fonti di ognuno e le dipendenze.
+
+Salta il passo 0. La ricognizione del passo 2 invece va fatta: `roadmap` ha guardato **cosa**
+fare, non **come** — l'architettura toccata e i vincoli trasversali fra i passi mancano. Al
+passo 3 i passi della roadmap sono le figlie: l'obiettivo della roadmap diventa l'**Obiettivo**
+della madre, le sue **Attese**, il **Dopo** e il **Lasciato fuori** vanno nel **Contesto** e nel
+**Fuori perimetro**, e le fonti di ogni passo (ID dei registri, sezioni di documenti, issue)
+passano al writer della sua figlia, che le cita nel Contesto.
+
+Se la ricognizione non cambia la divisione, la roadmap è già approvata: salta il riassunto e la
+domanda del passo 4 e vai al passo 5. Se la cambia — un passo va diviso, due vanno uniti, una
+dipendenza non regge — il passo 4 si fa, e il riassunto dice cosa è cambiato rispetto alla
+roadmap approvata e perché.
+
+Nella consegna del passo 9, se la roadmap veniva dai registri di research-flow, aggiungi la
+corrispondenza fra figlie e voci (`#21 ← TODO-012, ESP-031`) e proponi
+`/research-flow:annota` per segnarle `in corso` con la loro issue: i registri li scrive
+research-flow, non questa skill.
+
 ## Tu sei l'orchestratore
 
 Definisci la roadmap, prendi le decisioni con l'utente, apri la madre, **deleghi** la scrittura

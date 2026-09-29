@@ -1,7 +1,7 @@
 # Issue Flow
 
 Dalla richiesta alla merge request passando per una issue che contiene il piano **e** la
-roadmap che lo esegue. Quattro skill che si passano il lavoro, su **GitLab** (`glab`) o **GitHub**
+roadmap che lo esegue. Sei skill che si passano il lavoro, su **GitLab** (`glab`) o **GitHub**
 (`gh`) indifferentemente: la piattaforma si deduce dal remote.
 
 Il principio che tiene insieme tutto: *la issue deve essere eseguibile da un agente che non ha
@@ -11,6 +11,7 @@ esplicito.
 
 | skill | cosa fa |
 |---|---|
+| `/issue-flow:roadmap` | **cosa facciamo adesso**: legge la documentazione del progetto — i registri di [research-flow](https://github.com/MatteoSid/Research-Master-Skills) se ci sono, se no README, CLAUDE.md, docs — più le issue aperte e il codice, e propone i prossimi passi con le loro fonti; approvata, la salva in `ROADMAP.md` o ne crea le issue con `big-plan` |
 | `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
 | `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
 | `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
@@ -55,6 +56,24 @@ ricognizione — script di `package.json`, target del `Makefile`, `pyproject.tom
 «esegui i test». Se il progetto ha un `CLAUDE.md`, di solito li dice già.
 
 ## Come si lavora
+
+Per sapere da dove ripartire:
+
+```
+/issue-flow:roadmap                  →  propone i prossimi passi, ognuno con la sua fonte
+                                        approvata: ROADMAP.md nella radice, oppure
+                                        big-plan ne fa la madre e una figlia per passo
+/issue-flow:roadmap il frontend      →  solo i passi di un'area o di un traguardo
+```
+
+`roadmap` legge i registri di research-flow quando il repo ha `.research-flow.json` — lo stato
+del progetto, i TODO aperti, gli esperimenti proposti, le ipotesi da verificare — ma research-flow
+non è un requisito: senza, si basa su `ROADMAP.md` precedente, `CLAUDE.md`, `README.md`, i
+`docs_paths` e le issue aperte. Ogni passo cita la fonte da cui viene; quello che la
+documentazione non dice e `roadmap` propone di suo è segnato come tale. L'orizzonte si ferma al
+primo bivio che dipende da un esito non ancora noto: oltre, i due rami in una riga.
+
+Per una feature:
 
 ```
 /issue-flow:plan aggiungere il filtro per data alla lista        →  apre la issue #12

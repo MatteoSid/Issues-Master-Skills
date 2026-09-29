@@ -1,7 +1,7 @@
 # TRACKER — GitLab o GitHub, e cosa cambia
 
-Le quattro skill di questo plugin — `/issue-flow:plan`, `/issue-flow:big-plan`,
-`/issue-flow:implement`, `/issue-flow:close` — lavorano su un tracker che può essere **GitLab** (`glab`) o **GitHub**
+Le skill di questo plugin — `/issue-flow:roadmap`, `/issue-flow:plan`, `/issue-flow:big-plan`,
+`/issue-flow:implement`, `/issue-flow:big-implement`, `/issue-flow:close` — lavorano su un tracker che può essere **GitLab** (`glab`) o **GitHub**
 (`gh`). Il piano, la roadmap, le regole di scrittura e il modo di spuntare le caselle non
 cambiano: cambiano il comando e due parole. Questo file è il riferimento unico, e le
 skill lo citano invece di ripetersi.
