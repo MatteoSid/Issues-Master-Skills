@@ -7,7 +7,8 @@
 #            le figlie del progetto e la madre per big-implement (la madre non ha Piano: contano
 #            le caselle della sezione Issue, spuntate quando una figlia è unita nel suo branch);
 #            senza, l'hook non fa nulla
-#   in-volo  c'è un subagent di fase al lavoro — la sua notifica risveglierà l'orchestratore
+#   in-volo  c'è un subagent al lavoro — di fase per implement, il runner della figlia per
+#            big-implement — e la sua notifica risveglierà l'orchestratore
 #   blocchi  quante volte di fila l'hook ha bloccato con lo stesso stato
 #
 # Nel dubbio lascia fermare (exit 0): un goal che non si può verificare non deve diventare
@@ -78,7 +79,7 @@ fi
 if [ "$aperte" -eq 0 ]; then
   motivo="Roadmap tutta spuntata, ma ci sono modifiche non committate: committa l'ultima fase secondo /issue-flow:implement."
 else
-  motivo="Roadmap di #$prima non completa: $aperte checkbox aperte${fase:+, la prima in «$fase»}. Prosegui secondo /issue-flow:implement (o /issue-flow:big-implement, se stai portando avanti un progetto: la fase successiva, o la MR/PR e il merge nel branch della madre della figlia finita)."
+  motivo="Roadmap di #$prima non completa: $aperte checkbox aperte${fase:+, la prima in «$fase»}. Prosegui secondo /issue-flow:implement (o /issue-flow:big-implement, se stai portando avanti un progetto: il controllo della figlia che il runner ha riportato, poi un issue-runner nuovo per la successiva)."
 fi
 motivo+=" Se sei in uno dei casi di «Quando fermarsi davvero», o lasci una checkbox vuota per un motivo, rimuovi $dir/goal e spiega all'utente perché ti fermi."
 

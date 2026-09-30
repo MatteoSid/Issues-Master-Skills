@@ -1,6 +1,6 @@
 ---
 name: big-implement
-description: "Porta avanti in una sola esecuzione tutte le issue figlie di una issue madre di /issue-flow:big-plan — GitLab o GitHub — sul branch della madre: una figlia alla volta, nell'ordine della madre, ognuna con il giro di /issue-flow:implement (una fase per subagent, checkbox spuntate, un commit per fase) e quello di /issue-flow:close, che verifica, apre la merge request — pull request su GitHub — verso il branch della madre e la unisce da solo. Alla fine apre la MR/PR della madre verso il branch di destinazione, che unisce solo l'utente. Trigger: /issue-flow:big-implement, «implementa tutto il progetto N», «porta avanti tutta la roadmap N», «esegui tutte le figlie di N»."
+description: "Porta avanti in una sola esecuzione tutte le issue figlie di una issue madre di /issue-flow:big-plan — GitLab o GitHub — sul branch della madre: una figlia alla volta, nell'ordine della madre, ognuna affidata a un subagent issue-runner che fa il giro di /issue-flow:implement (una fase per subagent, checkbox spuntate, un commit per fase) e quello di /issue-flow:close, che verifica, apre la merge request — pull request su GitHub — verso il branch della madre e la unisce da solo. Alla fine apre la MR/PR della madre verso il branch di destinazione, che unisce solo l'utente. Trigger: /issue-flow:big-implement, «implementa tutto il progetto N», «porta avanti tutta la roadmap N», «esegui tutte le figlie di N»."
 argument-hint: "<madre>"
 hooks:
   Stop:
@@ -46,13 +46,24 @@ prima del primo comando.** Qui sotto c'è solo quello che cambia.
 
 ## Tu sei l'orchestratore, di tutto il progetto
 
-Come in `implement`, non implementi le fasi: le assegni a un subagent `issue-flow:issue-phase`
-per fase, ne verifichi l'esito, spunti e committi. In più tieni la visione del progetto: quale
-figlia è in corso, con quale MR/PR, e quante sono già nel branch della madre.
+Non implementi le figlie e non ne orchestri le fasi: ogni figlia la affidi a un subagent
+`issue-flow:issue-runner`, che fa per lei il giro di `implement` e di `close` fino al merge nel
+branch della madre, e a sua volta affida ogni fase a un subagent `issue-flow:issue-phase`:
 
-Il ciclo sta tutto qui, e non in un subagent per figlia, per lo stesso motivo strutturale di
-`implement`: un subagent non può lanciarne altri, quindi un subagent «che fa implement» non
-potrebbe delegare le fasi e finirebbe a fare tutto il lavoro della figlia nel suo contesto.
+```
+tu (big-implement)                  il progetto: catena, branch della madre, goal, MR/PR della madre
+ └─ issue-runner, uno per figlia     la figlia: fasi, verifiche, spunte, commit, close, merge
+     └─ issue-phase, uno per fase    la fase: il codice
+```
+
+Il motivo è il contesto, come in `implement` ma un livello più su: le fasi di tutte le figlie
+nel tuo contesto lo riempirebbero a metà progetto. Tu tieni la visione del progetto — quale
+figlia è in corso, con quale MR/PR, quante sono già nel branch della madre, cosa hanno cambiato
+in corsa — e controlli l'esito di ogni figlia sul tracker e su git, non sul racconto del runner.
+
+La catena usa tutta la profondità che Claude Code concede: sotto la sessione principale i
+subagent possono lanciarne altri per due livelli, e il terzo non ha più il tool `Agent`. Per
+questo `issue-phase` non delega, e il runner non deve mai essere lanciato da un altro subagent.
 
 **Mai due figlie insieme.** Né in parallelo né intrecciate: la figlia N+1 nasce dal branch della
 madre **dopo** che la N ci è stata unita, e parte dal codice che la N ha lasciato.
@@ -134,8 +145,10 @@ GOAL_DIR=$(git rev-parse --path-format=absolute --git-path issue-flow)
 mkdir -p "$GOAL_DIR" && printf '%s\n' 21 22 23 20 > "$GOAL_DIR/goal" && rm -f "$GOAL_DIR/in-volo"
 ```
 
-Lo scrivi dopo il passo 2, prima della prima fase. `in-volo` funziona come in `implement`: un
-solo subagent alla volta.
+Lo scrivi dopo il passo 2, prima della prima figlia. `in-volo` funziona come in `implement`, ma
+segnala il **runner** al lavoro: lo crei subito prima di delegare la figlia e lo cancelli appena
+il runner torna. Un solo runner alla volta. Il runner non tocca `.git/issue-flow/`: il goal e
+`in-volo` sono solo tuoi.
 
 Quando l'ultima figlia è unita l'hook ti lascia fermare anche se la MR/PR della madre non è
 ancora aperta. Non fermarti lì: la consegna arriva dopo il passo 5.
@@ -144,9 +157,41 @@ Per fermarti prima della fine **cancelli tu `$GOAL_DIR/goal`** e dici all'utente
 
 ## 4. Il giro, una figlia alla volta
 
-Per ogni figlia della catena, in ordine, tre passi.
+Per ogni figlia della catena, in ordine: la deleghi a un runner (4.1), il runner fa il giro
+della figlia (4.2), tu controlli come è finita (4.3). Poi la figlia successiva.
 
-### 4.1 Il branch, dalla madre
+### 4.1 Delega la figlia
+
+Un'invocazione del tool `Agent` con `subagent_type: "issue-flow:issue-runner"`. Il runner non
+ha visto la conversazione: **quello che non gli scrivi non esiste**. Nel prompt:
+
+- il numero e il titolo della figlia, il numero della madre, il branch della madre e il branch
+  di destinazione;
+- i percorsi assoluti delle istruzioni che deve leggere:
+  `${CLAUDE_PLUGIN_ROOT}/skills/big-implement/SKILL.md` — per il passo 4.2, il suo giro —,
+  `${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md`, `${CLAUDE_PLUGIN_ROOT}/skills/close/SKILL.md`
+  e `${CLAUDE_PLUGIN_ROOT}/TRACKER.md`;
+- i valori della configurazione: `${user_config.branch_prefix}`, `${user_config.default_branch}`,
+  `${user_config.verify_commands}`, `${user_config.docs_paths}`, `${user_config.figma_file}` —
+  vuoti compresi, detti come vuoti;
+- da dove riprendere, se il passo 1 ha trovato la figlia già iniziata: la prima fase non
+  spuntata, la MR/PR già aperta, il merge;
+- cosa hanno lasciato le sorelle già unite in questa esecuzione, se hanno deviato dalla loro
+  issue — il writer della figlia le conosceva solo come piano. È il campo «deviazioni» dei
+  report dei runner precedenti.
+
+Subito prima dell'invocazione `touch "$GOAL_DIR/in-volo"`, e appena il runner torna
+`rm -f "$GOAL_DIR/in-volo"`, prima del controllo.
+
+Regole non negoziabili: **un runner nuovo per ogni figlia**, mai riusarne uno con `SendMessage`
+per la figlia dopo, mai due figlie in parallelo. Mentre il runner lavora non tocchi la working
+tree né il tracker: siete sulla stessa cartella e sulle stesse issue.
+
+### 4.2 Il giro della figlia
+
+Questo lo fa il runner, e sta qui perché è il suo riferimento. Tre passi.
+
+#### Il branch, dalla madre
 
 La base di ogni figlia è il branch della madre aggiornato, **dopo** il merge della sorella
 precedente:
@@ -163,18 +208,18 @@ destinazione: è lì che stanno le sorelle già unite. Il controllo del passo **
 (`git log --oneline <branch-madre> | grep '#<k>'`), e i punti d'aggancio «nasce con #<k>»
 esistono lì. Se non reggono, ti fermi come dice `implement`.
 
-### 4.2 Le fasi
+#### Le fasi
 
-Il passo 3 di `implement` senza varianti: un subagent `issue-flow:issue-phase` **nuovo** per
-ogni fase con il contesto integrale della figlia, verifica eseguita da te, spunta sulla issue
-rileggendola dal server, un commit per fase con `(#<figlia>)` nel messaggio. A fine fasi, la
-riga **Stato:** della figlia come al passo 4 di `implement`.
+Il passo 3 di `implement`, con una sola variante: niente `in-volo` né `goal`, che sono di
+`big-implement`. Un subagent `issue-flow:issue-phase` **nuovo** per ogni fase con il contesto
+integrale della figlia, verifica eseguita dal runner, spunta sulla issue rileggendola dal
+server, un commit per fase con `(#<figlia>)` nel messaggio. A fine fasi, la riga **Stato:**
+della figlia come al passo 4 di `implement`.
 
-Quando passi il contesto al subagent, aggiungi cosa hanno lasciato le sorelle già unite in
-questa esecuzione, se hanno deviato dalla loro issue — il writer della figlia le conosceva solo
-come piano.
+Nel prompt di ogni fase va anche cosa hanno lasciato le sorelle già unite, se hanno deviato
+dalla loro issue.
 
-### 4.3 Close, fino al merge nel branch della madre
+#### Close, fino al merge nel branch della madre
 
 Tutto `close` sulla figlia, nel suo ramo «figlia con il branch della madre»: i controlli del
 passo 1, la documentazione del passo 2, la MR/PR del passo 3 **verso il branch della madre**,
@@ -186,7 +231,36 @@ poi il merge e la chiusura del passo 3 bis, che non aspettano l'utente. Alla fin
 - sei sul branch della madre, aggiornato: la figlia successiva nasce da qui.
 
 Se `close` si ferma — una casella vuota, una verifica rossa, una pipeline fallita, una MR/PR che
-il server non unisce — ti fermi anche tu: vedi «Quando fermarsi davvero».
+il server non unisce — il runner si ferma e lo scrive nel report.
+
+### 4.3 Controlla come è finita
+
+Il report del runner è un racconto, non una prova. Prima di passare alla figlia successiva
+controlli tu, sul server e su git:
+
+```bash
+# la MR/PR della figlia è unita nel branch della madre
+glab mr list --source-branch <branch> --target-branch <branch-madre> --merged   # GitLab
+gh   pr list --head <branch> --base <branch-madre> --state merged               # GitHub
+
+# la figlia è chiusa, con tutte le caselle del Piano spuntate
+glab issue view <figlia> --output json --jq '.state'    # "closed"
+gh   issue view <figlia> --json state --jq '.state'     # "CLOSED"
+
+# la sua casella è spuntata sulla madre: rileggi la madre dal server
+
+# sei sul branch della madre, pulito e aggiornato, con dentro i commit della figlia
+git branch --show-current && git status --porcelain
+git fetch origin && git status -sb | head -1              # niente «behind»
+git log --oneline <branch-madre> | grep '(#<figlia>)'
+```
+
+Se il runner si è fermato, o uno di questi controlli non torna, il progetto si ferma: vedi
+«Quando fermarsi davvero». Un runner che dice «unita» quando il server dice altro non si
+riprova: la figlia va guardata.
+
+Tieni le deviazioni del report: vanno nel prompt del runner della figlia successiva e nella
+consegna.
 
 Poi passa alla figlia successiva.
 
@@ -219,8 +293,9 @@ Non incollare le issue né il diff.
 
 ## Quando fermarsi davvero
 
-Tutti i casi di «Quando fermarsi davvero» di `implement` e di `close`, più uno: **se una figlia
-si ferma, il progetto si ferma con lei.** La successiva nascerebbe da un branch della madre
+Tutti i casi di «Quando fermarsi davvero» di `implement` e di `close` — che per una figlia li
+incontra il runner, e te li riporta —, più uno: **se una figlia si ferma, il progetto si ferma
+con lei.** La successiva nascerebbe da un branch della madre
 senza il suo lavoro, quindi non si salta avanti. Nella consegna di' quale figlia si è fermata,
 a che punto — fase, MR/PR, merge — perché, e che si riprende con
 `/issue-flow:big-implement <madre>` una volta sistemata: il passo 1 ritrova le figlie già unite e

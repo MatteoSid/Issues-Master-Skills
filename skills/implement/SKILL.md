@@ -30,9 +30,11 @@ Non implementi le fasi: le assegni, ne verifichi l'esito, spunti le caselle e co
 
 Il motivo è il contesto. Ogni fase parte da un subagent pulito che legge solo i file che le
 servono, mentre tu tieni la visione dell'insieme — a che punto è la roadmap, cosa ha deciso
-la fase precedente, cosa manca — senza riempirti dei dettagli di ogni singolo file. Il motivo
-secondario è strutturale: un subagent non può spawnarne un altro, quindi il ciclo deve stare
-qui.
+la fase precedente, cosa manca — senza riempirti dei dettagli di ogni singolo file.
+
+Con `/issue-flow:big-implement` questo stesso ciclo scende di un livello: lo esegue per ogni
+figlia un subagent `issue-flow:issue-runner`, che legge questa skill come riferimento e lascia
+il goal alla sessione principale.
 
 ## Lavori in modalità goal
 

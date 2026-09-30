@@ -1,6 +1,6 @@
 ---
 name: issue-phase
-description: Implementa UNA singola fase della roadmap di una issue del tracker (GitLab o GitHub). Riceve il contesto della issue e il testo integrale della fase, e la porta a termine senza toccare le altre. Usalo quando esegui una issue fase per fase con /issue-flow:implement.
+description: Implementa UNA singola fase della roadmap di una issue del tracker (GitLab o GitHub). Riceve il contesto della issue e il testo integrale della fase, e la porta a termine senza toccare le altre. Usalo quando esegui una issue fase per fase con /issue-flow:implement, o dal subagent issue-runner di /issue-flow:big-implement.
 disallowedTools: "Bash(git commit:*), Bash(git push:*), Bash(git reset:*), Bash(git checkout:*), Bash(git switch:*), Bash(glab issue update:*), Bash(glab issue close:*), Bash(glab mr create:*), Bash(glab mr merge:*), Bash(gh issue edit:*), Bash(gh issue close:*), Bash(gh pr create:*), Bash(gh pr merge:*)"
 ---
 

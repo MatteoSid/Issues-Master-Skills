@@ -15,11 +15,14 @@ esplicito.
 | `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
 | `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
 | `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
-| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta sul branch della madre: una alla volta, in ordine, ognuna con il giro di `implement` e di `close`, che la unisce da sola nel branch della madre; alla fine apre la MR/PR della madre, che unisci tu |
+| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta sul branch della madre: una alla volta, in ordine, ognuna affidata a un subagent che fa il giro di `implement` e di `close`, che la unisce da sola nel branch della madre; alla fine apre la MR/PR della madre, che unisci tu |
 | `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre; la figlia di un progetto con il branch della madre la unisce lì da sola |
 
-Più due subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
-toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output vero — e
+Più tre subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
+toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output vero —;
+`issue-flow:issue-runner`, che per `big-implement` porta una figlia dal branch al merge nel
+branch della madre, orchestrandone le fasi con un `issue-phase` ciascuna, così il contesto della
+sessione principale resta quello del progetto e non si riempie delle fasi di tutte le figlie; e
 `issue-flow:issue-writer`, che scrive il corpo di una issue figlia di `big-plan` in un file e non
 può creare issue: le crea l'orchestratore, in ordine, dopo averle controllate.
 
