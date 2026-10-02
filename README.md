@@ -1,7 +1,7 @@
 # Issue Flow
 
 Dalla richiesta alla merge request passando per una issue che contiene il piano **e** la
-roadmap che lo esegue. Sei skill che si passano il lavoro, su **GitLab** (`glab`) o **GitHub**
+roadmap che lo esegue. Sei skill che si passano il lavoro, e che fanno lavorare più agenti insieme dove si può, su **GitLab** (`glab`) o **GitHub**
 (`gh`) indifferentemente: la piattaforma si deduce dal remote.
 
 Il principio che tiene insieme tutto: *la issue deve essere eseguibile da un agente che non ha
@@ -13,18 +13,49 @@ esplicito.
 |---|---|
 | `/issue-flow:roadmap` | **cosa facciamo adesso**: legge la documentazione del progetto — i registri di [research-flow](https://github.com/MatteoSid/Research-Master-Skills) se ci sono, se no README, CLAUDE.md, docs — più le issue aperte e il codice, e propone i prossimi passi con le loro fonti; approvata, la salva in `ROADMAP.md` o ne crea le issue con `big-plan` |
 | `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
-| `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie, ognuna scritta completa da un subagent |
-| `/issue-flow:implement` | esegue la roadmap una fase per subagent, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
-| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta sul branch della madre: una alla volta, in ordine, ognuna affidata a un subagent che fa il giro di `implement` e di `close`, che la unisce da sola nel branch della madre; alla fine apre la MR/PR della madre, che unisci tu |
+| `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie a ondate, con perimetri e contratti per quelle che lavoreranno insieme; ogni figlia la scrive completa un subagent, tutti in parallelo |
+| `/issue-flow:implement` | esegue la roadmap una fase per subagent — le fasi di un gruppo parallelo insieme, ognuna nel suo worktree —, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
+| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta sul branch della madre: un'ondata alla volta, le figlie di un'ondata insieme, ognuna nel suo worktree e affidata a un subagent che fa il giro di `implement` e di `close`, che la unisce da sola nel branch della madre, una alla volta; alla fine apre la MR/PR della madre, che unisci tu |
 | `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre; la figlia di un progetto con il branch della madre la unisce lì da sola |
 
-Più tre subagent: `issue-flow:issue-phase`, che esegue una singola fase e non può committare né
-toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output vero —;
+Più tre subagent: `issue-flow:issue-phase`, l'agente checkbox, che esegue una singola fase e non
+può committare né toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output
+vero —;
 `issue-flow:issue-runner`, che per `big-implement` porta una figlia dal branch al merge nel
 branch della madre, orchestrandone le fasi con un `issue-phase` ciascuna, così il contesto della
 sessione principale resta quello del progetto e non si riempie delle fasi di tutte le figlie; e
 `issue-flow:issue-writer`, che scrive il corpo di una issue figlia di `big-plan` in un file e non
 può creare issue: le crea l'orchestratore, in ordine, dopo averle controllate.
+
+## Chi lavora insieme
+
+Quando si può, il lavoro si parallelizza: e si decide **quando si pianifica**, non quando si
+esegue. La roadmap e le issue dicono già cosa va insieme, e chi esegue lo ricontrolla e lo segue.
+
+| ruolo | chi è | assegna il lavoro a |
+|---|---|---|
+| **agente di roadmap** | `big-plan`, e all'esecuzione `big-implement` | un `issue-writer` per figlia; un agente di Issue per figlia |
+| **agente di Issue** | `implement`, o il subagent `issue-runner` | un agente checkbox per fase |
+| **agente checkbox** | il subagent `issue-phase` | — porta a termine le checkbox di una fase |
+
+- **Nella roadmap** le figlie stanno in **ondate**: quelle di un'ondata non dipendono l'una
+  dall'altra e si eseguono insieme, e la madre ha una sezione **Parallelismo** con il perimetro
+  di ognuna — i file che può toccare, disgiunti — e il **contratto** fra loro: i tipi, le
+  interfacce, i formati che condividono, con i nomi esatti. Anche `/issue-flow:roadmap` segna
+  quali passi possono andare insieme.
+- **In ogni issue** il Piano si apre con la riga **Esecuzione** — `1 → 2 → [3 ∥ 4] → 5 → 6` — e
+  ogni fase di un gruppo parallelo ha il suo **Perimetro** e il suo **Contratto**.
+- **All'esecuzione** ogni agente che lavora insieme ad altri ha il suo **worktree git**, su un
+  branch suo, dentro `.git/issue-flow/wt/`: nessuno scrive nella cartella di un altro. Le fasi
+  di un gruppo si integrano con un cherry-pick in ordine, le figlie di un'ondata con il loro
+  `close`, una alla volta; dopo ogni integrazione la verifica gira sull'albero unito.
+
+La regola che regge tutto: **il lavoro di due agenti in parallelo lo concorda l'agente che glielo
+assegna**, prima di assegnarlo. Gli agenti in parallelo non si vedono: il loro lavoro combacia
+perché perimetri e contratto li ha decisi chi sta sopra, e chi sta sopra li riconferma sul codice
+di adesso prima di partire. Se non reggono più, quel gruppo va in sequenza. Un conflitto
+all'integrazione vuol dire che l'accordo non reggeva: non lo risolve nessuno a mano, ci si ferma
+e si correggono le issue. Le regole complete sono in `PARALLEL.md`.
 
 ## Installazione
 
@@ -36,7 +67,7 @@ può creare issue: le crea l'orchestratore, in ordine, dopo averle controllate.
 Il `marketplace add` clona con le credenziali git della macchina, quindi va bene anche l'SSH:
 `git@github.com:MatteoSid/Issues-Master-Skills.git`.
 
-Serve `glab` o `gh` installato e autenticato — le skill lo controllano al passo 0 e si fermano
+Serve git 2.5 o successivo, per i worktree. Serve `glab` o `gh` installato e autenticato — le skill lo controllano al passo 0 e si fermano
 con il comando da lanciare se manca. Il login è interattivo e Claude non può farlo. Serve
 anche `jq`, che usa l'hook di `implement`.
 
@@ -51,6 +82,7 @@ impostano quando abiliti il plugin, o con `claude plugin install --config chiave
 | `branch_prefix` | `issue-` | il branch di lavoro è `<prefisso><numero della issue>` |
 | `verify_commands` | dal progetto | i comandi che devono passare prima di chiudere una fase |
 | `docs_paths` | dal progetto | la documentazione che la fase di chiusura rilegge |
+| `max_parallel` | `3` | quanti agenti lavorano insieme sotto lo stesso agente che assegna: figlie di un'ondata, fasi di un gruppo; `1` spegne il parallelismo |
 | `figma_file` | vuoto | l'id del file Figma da allineare prima del codice; vuoto = nessuna fase Figma |
 
 Quando `verify_commands` e `docs_paths` non sono impostati, `/issue-flow:plan` li ricava in
@@ -88,20 +120,21 @@ Per una feature:
 Per uno sviluppo che non sta in una issue:
 
 ```
-/issue-flow:big-plan sistema di notifiche con preferenze utente  →  madre #20, figlie #21 #22 #23
+/issue-flow:big-plan sistema di notifiche con preferenze utente  →  madre #20, figlie #21, poi #22 ∥ #23
 /issue-flow:implement 20                                         →  prende la prima figlia aperta, #21
 /issue-flow:close 21                                             →  apre la MR/PR di #21
 /issue-flow:close 21 --chiudi                                    →  chiude #21 e la spunta su #20
 /issue-flow:implement 20                                         →  ora tocca a #22, e così via
 ```
 
-Le figlie si eseguono una alla volta, ognuna con il suo branch e la sua MR/PR, e ognuna parte
-dal branch di destinazione con dentro le precedenti già unite. Oppure tutte in una volta, senza
-aspettare i merge:
+A mano, le figlie si eseguono una alla volta, ognuna con il suo branch e la sua MR/PR, e ognuna
+parte dal branch di destinazione con dentro le precedenti già unite. Oppure tutte in una volta,
+senza aspettare i merge e con le figlie di un'ondata in parallelo:
 
 ```
-/issue-flow:big-implement 20      →  branch issue-20 da main; #21, #22, #23 nascono da issue-20
-                                     e ci rientrano da sole; poi la MR/PR issue-20 → main
+/issue-flow:big-implement 20      →  branch issue-20 da main; #21, poi #22 e #23 insieme, ognuna
+                                     nel suo worktree, nascono da issue-20 e ci rientrano da
+                                     sole, una alla volta; poi la MR/PR issue-20 → main
 /issue-flow:close 20 --chiudi     →  dopo che hai unito la MR/PR della madre: chiude #20
 ```
 

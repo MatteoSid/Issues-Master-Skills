@@ -18,8 +18,9 @@ La roadmap approvata ha due uscite, a scelta dell'utente:
   una figlia per passo, ognuna scritta completa.
 
 Leggi `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md` — la skill `plan` di questo plugin — per
-come si scrive e per la dimensione di una issue, e `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` per i
-comandi delle due piattaforme. **Leggili prima del primo comando.**
+come si scrive e per la dimensione di una issue, `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` per i
+comandi delle due piattaforme e `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` §2 per quando due passi si
+possono eseguire insieme. **Leggili prima del primo comando.**
 
 ## Usage
 
@@ -161,8 +162,13 @@ Le regole:
 - **prima quello che toglie incertezza.** I P0, le ipotesi con impatto alto su cui altri passi
   si appoggiano, gli esperimenti il cui esito decide fra due strade, il modello dei dati prima di
   chi lo usa. Poi quello che ci si costruisce sopra;
-- **l'ordine è esplicito e le dipendenze sono dichiarate**: la stessa catena lineare di
-  `big-plan`, perché le issue si eseguiranno in sequenza;
+- **l'ordine è esplicito e le dipendenze sono dichiarate**, e i passi stanno in **ondate**
+  come le figlie di `big-plan`: due passi che non dipendono l'uno dall'altro e toccano parti
+  diverse del codice — guardate nel codice, non dal titolo — vanno nella stessa ondata, e
+  diventeranno figlie che `big-implement` esegue insieme. Qui basta il confine grosso: i moduli
+  o le cartelle di ognuno, e i file che toccherebbero entrambi (`PARALLEL.md` §2). Perimetri
+  esatti e contratti li fissa `big-plan` dopo la sua ricognizione, e può cambiare le ondate. Nel
+  dubbio, ondate di un passo solo;
 - **i vincoli di esercizio pesano sull'ordine.** Un test che gira e non va interrotto, un
   ambiente che non si può riavviare, un congelamento prima di un rilascio: cercali nelle fonti e
   guarda quali passi li toccano — nel codice, non dal titolo. Se un vincolo blocca metà dei passi,
@@ -176,8 +182,9 @@ Le regole:
   passi oltre l'ottavo vanno sotto **Dopo**;
 - **per ogni passo**: un titolo che dice cosa cambia per chi usa il prodotto — come il titolo di
   una issue —, cosa consegna, perché sta lì con le fonti (`TODO-012`, `ESP-031`, `README.md`
-  §Roadmap, `#45`, `backend/app/x.py:88`), da quale passo dipende, se chiude o rende verificabile
-  qualcosa (un'ipotesi, un dubbio, un criterio di successo).
+  §Roadmap, `#45`, `backend/app/x.py:88`), da quale passo dipende, la sua ondata e — se l'ondata
+  ha altri passi — dove tocca il codice, se chiude o rende verificabile qualcosa (un'ipotesi, un
+  dubbio, un criterio di successo).
 
 Tieni da parte, per il riassunto e per il file:
 
@@ -196,7 +203,8 @@ Scrivi in chat un riassunto:
   precedente e cosa ne resta, le issue aperte trovate; se hai letto documenti con modifiche non
   committate, dillo (`git status`), perché la roadmap poggia su quella versione;
 - **dove siamo**, in tre o quattro righe;
-- **i passi**, numerati, una riga ciascuno con cosa consegna, le fonti e la dipendenza;
+- **i passi**, numerati e divisi per ondata, una riga ciascuno con cosa consegna, le fonti e la
+  dipendenza;
 - le **Attese**, il **Dopo** e il **Lasciato fuori**, brevi;
 - le incongruenze trovate fra fonti e codice (passi già fatti ma aperti nei registri, issue
   dimenticate), perché qualcuno le corregga.
@@ -239,7 +247,8 @@ la roadmap approvata come bozza della divisione in figlie.
 Nel passaggio le devono arrivare, già scritti in conversazione nel riassunto del passo 5:
 
 - l'obiettivo della roadmap, che diventa l'**Obiettivo** della madre;
-- i passi con titolo, cosa consegna, fonti e dipendenze: una figlia per passo;
+- i passi con titolo, cosa consegna, fonti, dipendenze, ondata e dove toccano il codice: una
+  figlia per passo, e le ondate come bozza di quelle della madre;
 - **Attese**, **Dopo** e **Lasciato fuori**, che finiscono nel **Contesto** e nel **Fuori
   perimetro** della madre;
 - se la roadmap viene da research-flow, la corrispondenza fra passi e voci dei registri

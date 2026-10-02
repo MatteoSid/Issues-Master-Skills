@@ -24,9 +24,12 @@ si salta lavoro che prevede.
 /issue-flow:implement                  # deduce il numero dal branch corrente
 ```
 
-## Tu sei l'orchestratore e resti tale
+## Tu sei l'agente di Issue e resti tale
 
-Non implementi le fasi: le assegni, ne verifichi l'esito, spunti le caselle e committi.
+Non implementi le fasi: le assegni agli agenti checkbox — un subagent `issue-flow:issue-phase`
+per fase —, ne verifichi l'esito, spunti le caselle e committi. Quando la issue dichiara fasi in
+parallelo le assegni insieme, ognuna nel suo worktree di git, e sei tu a concordare il loro
+lavoro prima di assegnarlo e a integrarlo dopo (`${CLAUDE_PLUGIN_ROOT}/PARALLEL.md`).
 
 Il motivo è il contesto. Ogni fase parte da un subagent pulito che legge solo i file che le
 servono, mentre tu tieni la visione dell'insieme — a che punto è la roadmap, cosa ha deciso
@@ -51,9 +54,10 @@ GOAL_DIR=$(git rev-parse --path-format=absolute --git-path issue-flow)
 
 - `$GOAL_DIR/goal` — il numero della issue in lavorazione. Lo scrivi al passo 2; a roadmap
   completa lo cancella l'hook. Finché c'è, il turno non si chiude.
-- `$GOAL_DIR/in-volo` — c'è un subagent di fase al lavoro. Lo crei subito prima di delegare
-  e lo cancelli appena torna: in mezzo puoi chiudere il turno, perché ti risveglia la sua
-  notifica.
+- `$GOAL_DIR/in-volo/` — la cartella degli agenti checkbox al lavoro, un segnaposto per
+  ognuno (`PARALLEL.md` §5). Crei il segnaposto subito prima di delegare e lo cancelli appena
+  quell'agente torna: finché la cartella non è vuota puoi chiudere il turno, perché ti risveglia
+  la notifica del prossimo che torna.
 
 Per fermarti prima della fine — i casi di «Quando fermarsi davvero», o una checkbox che resta
 vuota — **cancelli tu `$GOAL_DIR/goal`** e dici all'utente perché. È voluto: lo stop è una
@@ -65,7 +69,8 @@ passo 2, il file non esiste ancora e non c'è niente da cancellare.
 Il tracker è GitLab (`glab`) o GitHub (`gh`) secondo il remote: `git remote get-url origin`.
 La corrispondenza completa dei comandi sta in `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — il file
 `TRACKER.md` nella cartella di questo plugin — da leggere prima del primo comando, perché il
-campo del corpo cambia nome fra le due piattaforme e sbagliarlo svuota la issue.
+campo del corpo cambia nome fra le due piattaforme e sbagliarlo svuota la issue. Se la issue ha
+fasi in parallelo, leggi anche `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md`.
 
 ```bash
 glab auth status && glab issue view <numero>          # GitLab
@@ -107,13 +112,18 @@ Poi ricava, e dillo all'utente prima di partire:
   issue #12 si lavora su `issue-12`;
 - l'elenco delle fasi (`###` dentro `## Piano`) con quante checkbox hanno e quante sono già
   spuntate, e da quale fase riparti;
+- l'ordine di esecuzione dalla riga **Esecuzione** in testa al Piano, con i gruppi paralleli —
+  `1 → 2 → [3 ∥ 4] → 5 → 6`. Una issue scritta prima che la riga esistesse non ce l'ha: è tutta
+  in sequenza;
 - se la issue non ha fasi con checkbox, **fermati**: non è una issue eseguibile. Riportalo e
   proponi `/issue-flow:plan rivedi <numero>`.
 
 ## 1 bis. La madre: quale figlia tocca
 
-Le figlie si eseguono **una alla volta, in ordine**. Nella sezione **Issue** della madre, la
-prima riga `- [ ] #<n>` non spuntata è la figlia da eseguire:
+Qui le figlie si eseguono **una alla volta, in ordine**. Nella sezione **Issue** della madre, la
+prima riga `- [ ] #<n>` non spuntata è la figlia da eseguire — dentro un'ondata l'ordine è
+libero, e se la prima ha una dipendenza aperta puoi prendere un'altra figlia della stessa
+ondata:
 
 ```bash
 grep -n '^[[:space:]]*- \[ \] #[0-9]' "$SCRATCH/roadmap.md" | head -1
@@ -134,9 +144,9 @@ figlia. **Mai due figlie nella stessa esecuzione**: ognuna ha il suo branch e la
 successiva parte dal codice che questa avrà unito.
 
 Per portare avanti tutte le figlie in una volta sola, senza aspettare i merge, c'è
-`/issue-flow:big-implement <madre>`: stessa esecuzione, una figlia alla volta, sul branch della
-madre — ogni figlia ci entra da sola, e al branch di destinazione arriva solo la MR/PR della
-madre.
+`/issue-flow:big-implement <madre>`: stessa esecuzione sul branch della madre, con le figlie di
+un'ondata insieme, ognuna nel suo worktree — ogni figlia ci entra da sola, e al branch di
+destinazione arriva solo la MR/PR della madre.
 
 ## 1 ter. La figlia regge ancora?
 
@@ -173,11 +183,14 @@ Sul branch giusto, attiva il goal — con il numero della issue che stai eseguen
 madre è quello della figlia:
 
 ```bash
-mkdir -p "$GOAL_DIR" && echo <numero> > "$GOAL_DIR/goal" && rm -f "$GOAL_DIR/in-volo"
+mkdir -p "$GOAL_DIR" && echo <numero> > "$GOAL_DIR/goal" && rm -rf "$GOAL_DIR/in-volo"
 ```
 
 Il `rm` toglie un `in-volo` rimasto da una sessione interrotta, che altrimenti lascerebbe il
-goal sempre spento.
+goal sempre spento. Per lo stesso motivo guarda `git worktree list`: un worktree di una fase
+rimasto da un giro interrotto (`$WT/<branch>-fase-<N>`, `PARALLEL.md` §4) o ha un commit da
+integrare — la fase era verificata e committata, e riparti dall'integrazione — o va tolto, e la
+fase rifatta.
 
 Per una figlia di un big-plan il branch nasce **sempre** dal branch in cui stanno le sorelle
 già unite, appena aggiornato — il `git pull --ff-only` qui sopra:
@@ -189,9 +202,12 @@ già unite, appena aggiornato — il `git pull --ff-only` qui sopra:
 
 Mai dal branch di una sorella non ancora unita.
 
-## 3. Il ciclo, una fase alla volta
+## 3. Il ciclo, un passo della riga Esecuzione alla volta
 
-Per ogni fase non completata, in ordine. Quattro passi, sempre gli stessi.
+Per ogni passo della riga **Esecuzione** non completato, in ordine. Un passo è una fase da sola
+oppure un gruppo parallelo, `[3 ∥ 4]`. Una fase da sola fa i quattro passi qui sotto, nella
+cartella del repo, sul branch della issue. Un gruppo fa gli stessi quattro passi per ognuna
+delle sue fasi, nel suo worktree, più due: l'accordo prima (3.1) e l'integrazione dopo (3.2).
 
 ### Delega
 
@@ -205,14 +221,15 @@ Nel prompt vanno, integrali e non riassunti:
   checkbox con i frammenti di codice sotto, la riga «Fatto quando»;
 - cosa hanno lasciato le fasi precedenti, se hanno deviato dal piano scritto.
 
-Subito prima dell'invocazione `touch "$GOAL_DIR/in-volo"`, e appena il subagent torna
-`rm -f "$GOAL_DIR/in-volo"`, prima della verifica.
+Subito prima dell'invocazione `mkdir -p "$GOAL_DIR/in-volo" && touch "$GOAL_DIR/in-volo/fase-<N>"`,
+e appena il subagent torna `rm -f "$GOAL_DIR/in-volo/fase-<N>"`, prima della verifica.
 
 Regole non negoziabili:
 
 - **un subagent nuovo per ogni fase.** Mai riusarne uno con `SendMessage` per la fase dopo,
-  mai passargliene due insieme, mai due fasi in parallelo: la fase N+1 parte dal codice che
-  la fase N ha lasciato, e in parallelo si pestano i piedi sugli stessi file;
+  mai passargliene due insieme, **mai due fasi in parallelo che la riga Esecuzione non mette
+  nello stesso gruppo**, e mai due agenti nella stessa cartella: la fase N+1 parte dal codice
+  che la fase N ha lasciato, e due agenti nella stessa working tree si pestano i piedi;
 - se la roadmap ha una fase Figma, è una fase come le altre e va al suo subagent, che userà la
   skill `figma:figma-use` e il tool `use_figma` sul file `${user_config.figma_file}`. Va
   **prima** del codice, sempre, perché il codice si adegua al Figma e non viceversa;
@@ -274,6 +291,67 @@ I messaggi seguono la convenzione già nel log del progetto — guardalo con
 `git log --oneline -20` prima del primo commit, invece di imporne una tua. Mai committare con
 la verifica fallita, mai un commit che copre due fasi.
 
+### 3.1 Un gruppo parallelo: l'accordo, poi tutti insieme
+
+Le fasi di un gruppo le ha dichiarate parallele chi ha scritto la issue, ma **l'accordo lo
+confermi tu**, sul codice di adesso, prima di assegnarle: sei l'agente che assegna il lavoro, e
+quello che due agenti checkbox fanno insieme deve combaciare per come l'hai deciso tu, non per
+caso. Controlla:
+
+- che i **Perimetri** delle fasi del gruppo siano disgiunti e coprano tutti i file che le loro
+  checkbox nominano — compresi i file calamita di `PARALLEL.md` §2, come un lockfile per una
+  dipendenza nuova;
+- che il **Contratto** regga sul codice: i nomi e i tipi su cui si appoggia esistono, con quella
+  forma, nel branch della issue com'è adesso;
+- che nessuna fase del gruppo abbia bisogno del codice di un'altra per la sua verifica.
+
+Se qualcosa non regge, **esegui il gruppo in sequenza**, nell'ordine dei numeri, e dillo
+all'utente nella consegna: è sempre corretto, e costa solo il tempo. Se reggeva solo con un
+contratto più preciso — un nome che la issue lasciava implicito —, fissalo tu, scrivilo nel
+prompt di **tutte** le fasi del gruppo e riscrivi la riga del Contratto nella issue.
+
+Poi, per ogni fase, il worktree di `PARALLEL.md` §4 — creato dal commit in cui sta il branch
+della issue, e preparato con il comando del **Contesto** — e la **Delega** di sempre, con in più
+nel prompt:
+
+- il percorso assoluto del worktree, e che lavora solo lì;
+- il suo **Perimetro**, e che fuori modifica niente;
+- il **Contratto** e cosa fanno le fasi sorelle, con i loro perimetri: non deve rifarlo né
+  toccarlo.
+
+Tutte le fasi del gruppo — al massimo `${user_config.max_parallel}`, vuoto vale 3; le altre a
+scaglioni — partono **in un solo messaggio**, ognuna con il suo segnaposto in
+`$GOAL_DIR/in-volo/`. Al ritorno di ognuna togli il suo segnaposto, e fai la **Verifica** nel
+suo worktree (`cd <worktree> && …`), più il controllo che sia rimasta nel perimetro:
+
+```bash
+git -C "$WT/<branch>-fase-<N>" status --porcelain    # solo file del Perimetro
+```
+
+Una fase uscita dal perimetro non si integra: una seconda passata con un agente nuovo nello
+stesso worktree, con detto quali file doveva lasciare stare. Una fase verde si **committa nel
+suo worktree** (`git -C "$WT/…" add -A && git -C "$WT/…" commit -m …`), un commit per fase come
+sempre. Le caselle non si spuntano ancora.
+
+### 3.2 Un gruppo parallelo: l'integrazione
+
+Quando tutte le fasi del gruppo sono committate nei loro worktree, le porti nel branch della
+issue, nella cartella del repo, **in ordine di numero**:
+
+```bash
+git cherry-pick <branch>-fase-3 <branch>-fase-4
+```
+
+Poi la **Verifica sull'albero unito** — i comandi di tutte le fasi del gruppo, più quelli del
+progetto per la parte toccata —: ognuna era verde da sola, ma è la prima volta che girano
+insieme. Solo adesso spunti le caselle di **tutte** le fasi del gruppo, in una riscrittura sola
+del corpo riletto dal server, e togli i worktree con i loro branch (`PARALLEL.md` §4).
+
+Un conflitto nel cherry-pick, o una verifica rossa sull'albero unito mentre le fasi erano verdi
+da sole, vuol dire che il lavoro non era compatibile: `git cherry-pick --abort`, e ti fermi —
+vedi «Quando fermarsi davvero». Non lo risolvi scegliendo una delle due versioni: il rimedio è
+nella issue, nei perimetri o nel contratto.
+
 ## 4. Dove finisce questa skill
 
 Al commit dell'ultima fase, con tutte le caselle spuntate sulla issue. **La MR/PR non la apri
@@ -287,7 +365,8 @@ di git.
 
 ## 5. Consegna
 
-Poche righe: le fasi chiuse con i loro commit (`git log --oneline`), le checkbox rimaste
+Poche righe: le fasi chiuse con i loro commit (`git log --oneline`), i gruppi eseguiti in
+parallelo e quelli che hai riportato in sequenza con il motivo, le checkbox rimaste
 vuote con il motivo, le deviazioni scritte nella roadmap, i problemi che i subagent hanno
 visto fuori dal loro perimetro, e come si prosegue: `/issue-flow:close <numero>`. Non
 incollare la issue né il diff.
@@ -303,7 +382,9 @@ figlie restanti senza aspettare i merge. Se la figlia è nata dal branch della m
 Fermati e chiedi, invece di proseguire, se: la stessa fase fallisce due volte; una fase
 richiede una decisione che la issue non ha preso; il lavoro tocca in modo sostanziale file
 che la issue non prevedeva; una verifica non è eseguibile su questa macchina (porta, servizio
-o credenziale mancanti); la issue è in contraddizione con il codice che trovi.
+o credenziale mancanti); la issue è in contraddizione con il codice che trovi; due fasi di un
+gruppo parallelo non si integrano — un conflitto, o l'albero unito rosso. In quest'ultimo caso
+lascia i worktree dove sono, con i loro commit: servono a chi deve capire cosa non combaciava.
 
 Prima di fermarti, `rm -f "$GOAL_DIR/goal"`: altrimenti l'hook ti rimanda al lavoro.
 

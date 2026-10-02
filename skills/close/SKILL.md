@@ -120,9 +120,10 @@ git merge-base --is-ancestor origin/<base> HEAD   # exit 0: il branch contiene l
 
 Se il branch non contiene la base — il branch di destinazione è andato avanti mentre il
 progetto era sul branch della madre, o il branch della madre è andato avanti mentre la figlia
-lavorava — unisci la base nel branch (`git merge origin/<base>`) e rifai i controlli. Se il
-merge ha conflitti, `git merge --abort` e fermati: come risolverli è una decisione, non un
-refuso.
+lavorava, per esempio perché una sorella della stessa ondata ci è entrata prima — unisci la
+base nel branch (`git merge origin/<base>`) e rifai i controlli. Se il merge ha conflitti,
+`git merge --abort` e fermati: come risolverli è una decisione, non un refuso — e fra due
+sorelle di un'ondata vuol dire che l'accordo fra loro non reggeva.
 
 Se la working tree è sporca, fermati: quel lavoro non è in nessun commit e non finirebbe
 nella MR/PR.
@@ -274,6 +275,13 @@ se la issue è una figlia». In locale torni sul branch della madre, aggiornato:
 ```bash
 git switch <branch-madre> && git pull --ff-only
 ```
+
+Se lavori in un **worktree** — quello che `/issue-flow:big-implement` dà a ogni figlia
+(`PARALLEL.md`) — non torni da nessuna parte: il branch della madre è nella cartella principale
+del repo, e lo aggiorna, insieme al worktree che toglie, chi te l'ha dato. Allo stesso modo il
+branch locale della figlia, che il worktree tiene occupato, lo cancella lui. Ti accorgi di
+essere in un worktree perché `git rev-parse --git-dir` e `git rev-parse --git-common-dir` non
+coincidono.
 
 ## 4. Dopo il merge — `--chiudi`
 

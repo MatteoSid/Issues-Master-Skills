@@ -25,7 +25,10 @@ non consultato»).]
 ## Prossimi passi
 
 [In ordine di esecuzione. Ogni passo ha la dimensione di una issue, e si può aprire con
-`/issue-flow:plan` copiando il suo titolo e la sua descrizione.]
+`/issue-flow:plan` copiando il suo titolo e la sua descrizione. I passi di una stessa ondata
+non dipendono l'uno dall'altro, toccano parti diverse del codice e si possono eseguire insieme.]
+
+**Ondate:** [in una riga: `1 → [2 ∥ 3] → 4`. Senza passi paralleli, `1 → 2 → 3 → 4`.]
 
 ### 1. [titolo: cosa cambia per chi usa il prodotto]
 
@@ -36,6 +39,8 @@ non consultato»).]
 - **Dopo sappiamo:** [facoltativa: cosa si saprà — l'ipotesi che regge o cade, il criterio di
   successo che si misura]
 - **Dipende da:** [il passo, un'attesa, una issue già aperta, oppure «niente»]
+- **In parallelo con:** [facoltativa, solo se l'ondata ha altri passi: quali, e dove tocca il
+  codice questo — i moduli o le cartelle —, così chi ne farà le issue vede il confine]
 
 ### 2. [titolo]
 

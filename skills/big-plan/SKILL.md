@@ -9,14 +9,16 @@ argument-hint: "<descrizione dello sviluppo>"
 `/issue-flow:plan` è per **una** feature: una issue, da 5 a 8 fasi, una merge request. Quando
 lo sviluppo non ci sta — un sottosistema nuovo, una migrazione in più tappe, una funzionalità
 che attraversa backend, dati e interfaccia — questa skill ne fa un **progetto**: una issue
-madre che tiene la roadmap complessiva, e le issue figlie che la eseguono una alla volta, ognuna
-con il suo branch e la sua MR/PR.
+madre che tiene la roadmap complessiva, e le issue figlie che la eseguono a **ondate** — le
+figlie di un'ondata insieme, un'ondata dopo l'altra — ognuna con il suo branch e la sua MR/PR.
 
 Tutto quello che `plan` dice vale anche qui, e non si ripete: `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md`
 — la skill `plan` di questo plugin — per il principio («la issue deve essere eseguibile da un
 agente che non ha assistito alla conversazione»), il progetto ospite, la ricognizione, le fasi,
 le checkbox, come si spunta e come si scrive. `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` per i comandi
-delle due piattaforme e le loro trappole. **Leggili entrambi prima del primo comando.**
+delle due piattaforme e le loro trappole. `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` per quando due
+figlie, o due fasi, possono lavorare insieme e per come lo si scrive. **Leggili tutti e tre
+prima del primo comando.**
 
 ## Usage
 
@@ -62,11 +64,16 @@ corrispondenza fra figlie e voci (`#21 ← TODO-012, ESP-031`) e proponi
 `/research-flow:annota` per segnarle `in corso` con la loro issue: i registri li scrive
 research-flow, non questa skill.
 
-## Tu sei l'orchestratore
+## Tu sei l'agente di roadmap
 
 Definisci la roadmap, prendi le decisioni con l'utente, apri la madre, **deleghi** la scrittura
 di ogni figlia a un subagent e poi controlli e crei tutto sul tracker. Non scrivi tu i corpi
 delle figlie.
+
+Sei anche quello che **concorda il lavoro**: i writer scrivono le figlie tutti insieme, e le
+figlie di un'ondata verranno eseguite tutte insieme. Né i writer né chi eseguirà le figlie si
+vedono fra loro: il loro lavoro combacia solo perché tu hai deciso prima chi tocca cosa e con
+quali nomi — perimetri e contratti, `PARALLEL.md` §1.
 
 Il motivo è lo stesso di `/issue-flow:implement`: ogni figlia richiede la sua ricognizione nel
 codice — file letti davvero, righe verificate, numeri misurati — e fatte tutte qui dentro
@@ -102,7 +109,10 @@ sistema che lo sviluppo attraversa.
 - **i numeri misurati** che dimensionano il lavoro: quante righe, quanti chiamanti, quanti
   record, quanti endpoint;
 - il progetto ospite come in `plan`: branch di destinazione, comandi di verifica,
-  documentazione da tenere allineata. Ricavali una volta qui e passali a tutti i writer.
+  documentazione da tenere allineata, comando di preparazione di un worktree e risorse che un
+  worktree non isola. Ricavali una volta qui e passali a tutti i writer;
+- **dove passano i confini fra le figlie**: quali file toccherebbe ognuna, e quali file
+  calamita (`PARALLEL.md` §2) toccherebbero in più d'una. È quello che decide le ondate.
 
 ### 3. La scomposizione
 
@@ -114,13 +124,25 @@ sistema che lo sviluppo attraversa.
   pezzi non stanno in piedi separati, sono una issue sola, oppure il primo va dietro un flag;
 - **ogni figlia sta nelle 5–8 fasi di `plan`**, verifica e chiusura comprese. Se una non ci
   sta, va divisa; se due insieme ci stanno comode, vanno unite;
-- **l'ordine è esplicito e le dipendenze sono dichiarate.** L'esecuzione è sequenziale, quindi
-  di norma la catena è lineare: la figlia N parte dal codice che le figlie prima di lei hanno
-  unito. Mettere prima quello che toglie incertezza — il modello dei dati, l'interfaccia fra
-  due moduli — e dopo quello che ci si appoggia;
+- **l'ordine è esplicito e le dipendenze sono dichiarate.** Una figlia parte dal codice che le
+  figlie da cui dipende hanno unito. Mettere prima quello che toglie incertezza — il modello dei
+  dati, l'interfaccia fra due moduli — e dopo quello che ci si appoggia;
+- **le figlie stanno in ondate.** Due figlie che non dipendono l'una dall'altra e rispettano le
+  condizioni di `PARALLEL.md` §2 — perimetri disgiunti, nessuna che ha bisogno del codice
+  dell'altra, un contratto scritto, nessuna risorsa condivisa nella verifica — vanno nella
+  stessa ondata, e `big-implement` le eseguirà insieme. Un'ondata comincia quando la precedente
+  è tutta unita. Spesso il parallelo si ottiene mettendo prima una figlia che fissa
+  l'interfaccia — lo schema, i tipi, l'API — e dopo di lei, nella stessa ondata, chi ci si
+  appoggia da lati diversi: il backend che la implementa e il frontend che la consuma. Nel
+  dubbio, ondate di una figlia sola: una catena lineare è sempre corretta;
+- **per ogni ondata con più figlie, il perimetro e il contratto.** Il perimetro di ogni figlia:
+  i moduli, le cartelle o i file che può modificare, e i file calamita di `PARALLEL.md` §2 con il
+  loro unico proprietario. Il contratto: quello che le figlie dell'ondata condividono, con il
+  nome e la forma esatti. Sono le righe che i writer riceveranno come vincolo e che chi esegue
+  ricontrollerà;
 - **per ogni figlia**: un titolo che dice cosa cambia per chi usa il prodotto, cosa consegna,
   cosa lascia alle successive (tipi, interfacce, endpoint, file che nasceranno — con il nome
-  che avranno), cosa resta fuori.
+  che avranno), cosa resta fuori, la sua ondata.
 
 Se la scomposizione dà **una sola** issue, lo sviluppo non è grosso: dillo e proponi
 `/issue-flow:plan`, invece di aprire una madre con una figlia sola.
@@ -129,7 +151,8 @@ Se la scomposizione dà **una sola** issue, lo sviluppo non è grosso: dillo e p
 
 Chiusi i bivi, scrivi in chat un riassunto: l'obiettivo, l'architettura in poche righe, i
 vincoli trasversali trovati, le decisioni prese da solo con la motivazione, e l'elenco delle
-figlie — una riga ciascuna, con cosa consegna e da chi dipende. Poi `AskUserQuestion` con tre
+figlie divise per ondata — una riga ciascuna, con cosa consegna e da chi dipende — e per ogni
+ondata con più figlie i perimetri in una riga ciascuno. Poi `AskUserQuestion` con tre
 opzioni: «Apri le issue» (Recommended), «Cambia qualcosa» (l'utente dice cosa, tu correggi e
 richiedi), «Lascia stare» (non apri niente e ti fermi).
 
@@ -140,7 +163,7 @@ argomenti — salta il riassunto e la domanda e vai al passo 5.
 
 Segui `TEMPLATE.md`, il file accanto a questo. La sezione **Issue** a questo punto ha le righe
 con un segnaposto al posto del numero — `- [ ] #(1) titolo — cosa consegna` — perché le figlie
-non esistono ancora; il numero lo metti al passo 8. La madre si apre per prima perché le figlie
+non esistono ancora, e così la sezione **Parallelismo**; il numero lo metti al passo 8. La madre si apre per prima perché le figlie
 devono poterla citare dal primo momento.
 
 ```bash
@@ -165,10 +188,16 @@ integrali e non riassunti:
 - l'elenco completo delle figlie, con il segnaposto `#(k)`, il titolo e cosa consegna ognuna:
   il writer deve sapere cosa fanno le sorelle per non rifarlo e per dirlo nel suo fuori
   perimetro;
-- la posizione della sua figlia — `#(3)`, terza di 5 — e **cosa troverà già fatto** quando toccherà a
-  lei: i tipi, le interfacce, i file che le figlie prima avranno creato, con i nomi decisi;
-- il branch di destinazione, i comandi di verifica e i file di documentazione ricavati al
-  passo 2;
+- la posizione della sua figlia — `#(3)`, terza di 5, nell'ondata 2 — e **cosa troverà già
+  fatto** quando toccherà a lei: i tipi, le interfacce, i file che le figlie delle ondate prima
+  avranno creato, con i nomi decisi;
+- se la sua ondata ha più figlie: **il suo perimetro**, il perimetro delle sorelle dell'ondata
+  e il **contratto** fra loro, integrali dalla sezione **Parallelismo** della madre. Il writer
+  scrive la figlia dentro il suo perimetro, rispetta il contratto così com'è, e se gli serve un
+  file fuori perimetro o un nome che il contratto non fissa non se lo prende: lo scrive nel
+  report, e decidi tu;
+- il branch di destinazione, i comandi di verifica, i file di documentazione e il comando di
+  preparazione di un worktree ricavati al passo 2;
 - se `${user_config.figma_file}` è configurato, l'id del file: la figlia che tocca il frontend
   avrà la fase Figma per prima;
 - il percorso esatto del file in cui scrivere il corpo: `$SCRATCH/figlia-<k>.md`.
@@ -183,7 +212,15 @@ Al ritorno dei writer, rileggi **ogni** file — il report di un subagent è un 
 - in testa ha `- **Roadmap:** #<madre>` e, se ne ha, le righe `- **Dipende da:** #(k)`;
 - le fasi sono da 5 a 8, con la verifica in penultima e la chiusura per ultima; le checkbox si
   contano con i `grep` di `TRACKER.md` §5;
-- non fa il lavoro di una sorella, e non contraddice le decisioni della madre.
+- il Piano ha la riga **Esecuzione**, e ogni fase di un gruppo parallelo ha **Perimetro** e
+  **Contratto** (`PARALLEL.md` §3);
+- non fa il lavoro di una sorella, e non contraddice le decisioni della madre;
+- **i perimetri di un'ondata reggono**: metti in fila i file che le figlie della stessa ondata
+  nominano nei loro Piani — le righe dei file sotto ogni fase, i **Perimetro** — e controlla che
+  nessun file, o sezione di file, compaia in due figlie, e che ognuna stia nel perimetro che le
+  avevi dato. Una sovrapposizione si decide qui, non quando due runner la scopriranno in un
+  conflitto: il file va a una figlia sola, oppure una delle due passa all'ondata dopo. Se
+  cambia la scomposizione, con l'utente.
 
 Se un writer ha segnalato un vincolo che la roadmap non prevedeva, **decidi tu** — con
 l'utente, se cambia la scomposizione — e non lasciarlo risolto in silenzio dentro una figlia.
@@ -201,7 +238,8 @@ Poi i segnaposto diventano numeri:
 
 - in ogni figlia che cita una sorella — `**Dipende da:** #(2)`, «nasce con #(2)», il fuori
   perimetro — `#(k)` diventa `#<numero>`;
-- nella madre, la sezione **Issue** diventa `- [ ] #<numero> titolo — cosa consegna`.
+- nella madre, la sezione **Issue** diventa `- [ ] #<numero> titolo — cosa consegna`, e la
+  sezione **Parallelismo** cita le figlie con il loro numero.
 
 Ogni riscrittura segue la regola di sempre: **rileggi il corpo dal server**, sostituisci,
 controlla che il file non sia vuoto, rimandalo su (`TRACKER.md` §4). Alla fine, un
@@ -210,15 +248,17 @@ controlla che il file non sia vuoto, rimandalo su (`TRACKER.md` §4). Alla fine,
 ### 9. Consegna
 
 In poche righe: il link della madre, l'elenco delle figlie con numero, titolo e link nell'ordine
-di esecuzione, cosa hai trovato in ricognizione che la richiesta non prevedeva, le decisioni
+di esecuzione, divise per ondata, cosa hai trovato in ricognizione che la richiesta non prevedeva, le decisioni
 prese da solo con la motivazione, e cosa è rimasto fuori. Chiudi con come si parte:
 `/issue-flow:implement <madre>`, che prende da solo la prima figlia aperta, o
-`/issue-flow:big-implement <madre>`, che le porta avanti tutte in sequenza. Non incollare le
+`/issue-flow:big-implement <madre>`, che le porta avanti tutte, un'ondata dopo l'altra e le
+figlie di un'ondata insieme. Non incollare le
 issue nella risposta.
 
 ## Come si avanza nel progetto
 
-Non con questa skill. Le figlie si eseguono **una alla volta, in ordine**, con il giro normale:
+Non con questa skill. A mano, le figlie si eseguono **una alla volta, in ordine** — dentro
+un'ondata in qualunque ordine — con il giro normale:
 
 ```
 /issue-flow:implement <figlia>           # o <madre>: prende la prima figlia non ancora unita
@@ -231,9 +271,10 @@ precedenti. La casella della madre si spunta **quando la figlia è unita**, non 
 implementata: lo fa `/issue-flow:close --chiudi`, che chiude anche la madre quando l'ultima
 casella è spuntata.
 
-Oppure tutte in una volta con `/issue-flow:big-implement <madre>`: lo stesso giro, una figlia
-alla volta, sul branch della madre — ogni figlia nasce da lì e ci rientra con la sua MR/PR, che
-`close` unisce da solo dopo i controlli di sempre. Alla fine la MR/PR della madre porta tutto
+Oppure tutte in una volta con `/issue-flow:big-implement <madre>`: lo stesso giro sul branch
+della madre, con le figlie di un'ondata eseguite insieme, ognuna nel suo worktree — ogni figlia
+nasce da lì e ci rientra con la sua MR/PR, che `close` unisce da solo dopo i controlli di sempre,
+una figlia alla volta. Alla fine la MR/PR della madre porta tutto
 nel branch di destinazione, e la unisce l'utente; poi `/issue-flow:close <madre> --chiudi`.
 
 Se durante l'esecuzione una figlia scopre che la roadmap non regge più — una decisione della

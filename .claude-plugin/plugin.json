@@ -1,8 +1,8 @@
 {
   "name": "issue-flow",
   "displayName": "Issue Flow",
-  "version": "1.6.0",
-  "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue; per gli sviluppi grossi, una roadmap di progetto divisa in issue eseguite in sequenza; e, prima di tutto, la proposta dei prossimi passi letta dalla documentazione del progetto. Funziona su GitLab (glab) e GitHub (gh).",
+  "version": "1.7.0",
+  "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue; per gli sviluppi grossi, una roadmap di progetto divisa in issue eseguite a ondate, con il lavoro che si può parallelizzare affidato a più agenti, ognuno nel suo worktree git; e, prima di tutto, la proposta dei prossimi passi letta dalla documentazione del progetto. Funziona su GitLab (glab) e GitHub (gh).",
   "author": {
     "name": "Matteo Donato"
   },
@@ -41,6 +41,12 @@
       "title": "Documentazione da tenere allineata",
       "description": "I file o le cartelle di documentazione che la fase di chiusura deve rileggere, uno per riga (es. README.md, docs/).",
       "multiple": true
+    },
+    "max_parallel": {
+      "type": "string",
+      "title": "Agenti in parallelo",
+      "description": "Quanti agenti possono lavorare insieme sotto lo stesso agente che assegna il lavoro: figlie di un'ondata, fasi di un gruppo. Vuoto: 3. 1 spegne il parallelismo.",
+      "default": ""
     },
     "figma_file": {
       "type": "string",

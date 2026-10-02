@@ -7,8 +7,10 @@
 #            le figlie del progetto e la madre per big-implement (la madre non ha Piano: contano
 #            le caselle della sezione Issue, spuntate quando una figlia è unita nel suo branch);
 #            senza, l'hook non fa nulla
-#   in-volo  c'è un subagent al lavoro — di fase per implement, il runner della figlia per
-#            big-implement — e la sua notifica risveglierà l'orchestratore
+#   in-volo  la cartella dei subagent al lavoro, un segnaposto per ognuno — agenti checkbox per
+#            implement, runner delle figlie per big-implement, anche più d'uno insieme (vedi
+#            PARALLEL.md §5); finché non è vuota, la notifica del prossimo che torna risveglierà
+#            l'orchestratore. Un file semplice, dalle versioni precedenti, vale come un segnaposto
 #   blocchi  quante volte di fila l'hook ha bloccato con lo stesso stato
 #
 # Nel dubbio lascia fermare (exit 0): un goal che non si può verificare non deve diventare
@@ -26,6 +28,7 @@ cd "$cwd" 2>/dev/null || exit 0
 dir=$(git rev-parse --path-format=absolute --git-path issue-flow 2>/dev/null) || exit 0
 [ -f "$dir/goal" ] || exit 0
 [ -f "$dir/in-volo" ] && exit 0
+[ -d "$dir/in-volo" ] && [ -n "$(ls -A "$dir/in-volo" 2>/dev/null)" ] && exit 0
 
 avviso() { echo "issue-flow: $*" >&2; exit 0; }
 
@@ -79,7 +82,7 @@ fi
 if [ "$aperte" -eq 0 ]; then
   motivo="Roadmap tutta spuntata, ma ci sono modifiche non committate: committa l'ultima fase secondo /issue-flow:implement."
 else
-  motivo="Roadmap di #$prima non completa: $aperte checkbox aperte${fase:+, la prima in «$fase»}. Prosegui secondo /issue-flow:implement (o /issue-flow:big-implement, se stai portando avanti un progetto: il controllo della figlia che il runner ha riportato, poi un issue-runner nuovo per la successiva)."
+  motivo="Roadmap di #$prima non completa: $aperte checkbox aperte${fase:+, la prima in «$fase»}. Prosegui secondo /issue-flow:implement (o /issue-flow:big-implement, se stai portando avanti un progetto: il controllo delle figlie che i runner hanno riportato, l'integrazione dell'ondata, poi i runner nuovi per la successiva)."
 fi
 motivo+=" Se sei in uno dei casi di «Quando fermarsi davvero», o lasci una checkbox vuota per un motivo, rimuovi $dir/goal e spiega all'utente perché ti fermi."
 

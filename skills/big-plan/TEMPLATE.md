@@ -44,19 +44,48 @@ giro — con il perché.]
 
 ## Issue
 
-[Le figlie in ordine di esecuzione. Alla creazione della madre al posto del numero c'è il
-segnaposto `#(k)`; diventa `#<numero>` quando le figlie sono aperte.]
+[Le figlie in ordine di esecuzione, divise per ondata: le figlie di un'ondata si eseguono
+insieme, un'ondata comincia quando la precedente è tutta unita. Alla creazione della madre al
+posto del numero c'è il segnaposto `#(k)`; diventa `#<numero>` quando le figlie sono aperte.
+Un'ondata di una figlia sola è normale: una catena lineare è sempre corretta.]
+
+**Ondata 1**
 
 - [ ] #13 [titolo] — [cosa consegna, in una riga]
+
+**Ondata 2** — in parallelo
+
 - [ ] #14 [titolo] — [cosa consegna] · dipende da #13
-- [ ] #15 [titolo] — [cosa consegna] · dipende da #14
+- [ ] #15 [titolo] — [cosa consegna] · dipende da #13
+
+**Ondata 3**
+
+- [ ] #16 [titolo] — [cosa consegna] · dipende da #14, #15
+
+## Parallelismo
+
+[Una sottosezione per ogni ondata con più di una figlia; se non ce ne sono, una riga: «Nessuna
+ondata parallela: le figlie si eseguono una alla volta.» È l'accordo fra le figlie che lavorano
+insieme, deciso da chi ha scritto la roadmap: chi le scrive e chi le esegue lo rispetta senza
+rinegoziarlo. Le condizioni sono quelle di `PARALLEL.md` §2 nel repo del plugin.]
+
+### Ondata 2 — #14 ∥ #15
+
+- **#14 tocca:** [moduli, cartelle o file — o sezioni di file condivisi — che può modificare o
+  creare, e nient'altro]
+- **#15 tocca:** [idem; disgiunto da #14]
+- **Non tocca nessuna delle due:** [i file calamita — lockfile, migrazioni, registri, indici,
+  changelog — con chi li tocca dopo; oppure il loro unico proprietario nell'ondata]
+- **Contratto:** [quello che condividono, con nomi e forme esatti: il tipo nato con #13 che
+  entrambe usano così com'è, l'endpoint che #14 espone e #15 chiama, con il formato della
+  risposta. Nessuna delle due lo cambia.]
 
 ## Come si avanza
 
 [Sezione obbligatoria, si copia com'è.]
 
-Le figlie si eseguono **una alla volta, nell'ordine qui sopra**, ognuna con il suo branch e la
-sua merge request — pull request su GitHub:
+A mano, le figlie si eseguono **una alla volta, nell'ordine qui sopra** — dentro un'ondata in
+qualunque ordine —, ognuna con il suo branch e la sua merge request — pull request su GitHub:
 
 ```
 /issue-flow:implement <figlia>        # o il numero di questa issue: prende la prima figlia aperta
@@ -65,8 +94,9 @@ sua merge request — pull request su GitHub:
 ```
 
 Oppure tutte in una volta, senza aspettare i merge, con `/issue-flow:big-implement <questa
-issue>`: questa issue ha il suo branch, ogni figlia nasce da lì e ci rientra con una merge
-request unita in automatico dopo i controlli di `/issue-flow:close`; alla fine la merge request
+issue>`: questa issue ha il suo branch, ogni figlia nasce da lì — quelle di un'ondata insieme,
+ognuna nel suo worktree — e ci rientra con una merge request unita in automatico, una alla
+volta, dopo i controlli di `/issue-flow:close`; alla fine la merge request
 di questa issue porta tutto il progetto nel branch di destinazione, e la unisce solo chi la
 approva. A merge avvenuto, `/issue-flow:close <questa issue> --chiudi`.
 

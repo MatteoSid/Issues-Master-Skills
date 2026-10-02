@@ -45,11 +45,19 @@ devono continuare a funzionare, e cosa mostreranno.]
 **Cosa resta com'è, e perché.** [Il codice adiacente che si è tentati di sistemare e che
 questa issue non tocca — con il motivo per cui non lo tocca.]
 
+**Come si prepara un worktree.** [Solo se il Piano ha fasi in parallelo: il comando che rende
+eseguibile la verifica in un checkout nuovo — `npm ci`, `uv sync`, la copia di `.env.example` —
+e le risorse che un worktree non isola (porte fisse, database locale), se la verifica le usa.]
+
 ## Piano
 
 [Le fasi. Ognuna è un `###`, con un titolo che dice cosa fa, e sotto: una riga che nomina i
 file toccati, poi le checkbox. Le fasi obbligate — verifica in penultima, chiusura per ultima,
 e il Figma per primo se il progetto ne ha uno configurato — sono descritte in `SKILL.md`.]
+
+**Esecuzione:** [l'ordine delle fasi, con i gruppi paralleli fra parentesi quadre:
+`1 → 2 → [3 ∥ 4] → 5 → 6`. Sempre presente: senza gruppi, `1 → 2 → 3 → 4 → 5 → 6`. Quando due
+fasi possono stare in un gruppo lo dice `PARALLEL.md` §2.]
 
 ### Fase 1 — [titolo]
 
@@ -58,6 +66,17 @@ e il Figma per primo se il progetto ne ha uno configurato — sono descritte in 
 - [ ] [checkbox atomiche, imperative, che nominano file e riga]
 
 **Fatto quando:** [l'osservazione che prova che la fase è finita.]
+
+### Fase 3 — [titolo di una fase in un gruppo parallelo]
+
+**Perimetro:** `percorso/a.ts`, `percorso/a.test.ts` — solo questi.
+**In parallelo con:** Fase 4. **Contratto:** [quello che le fasi del gruppo condividono, con
+nomi e forme esatti — il tipo nato alla fase 2 che entrambe usano così com'è, il nome della
+chiave che una scrive e l'altra legge —, e quello che questa fase lascia stare perché è della 4.]
+
+- [ ] […]
+
+**Fatto quando:** [osservabile nel worktree della fase, senza il lavoro della 4.]
 
 [...le altre fasi...]
 

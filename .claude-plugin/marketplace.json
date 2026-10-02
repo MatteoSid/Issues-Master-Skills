@@ -7,8 +7,8 @@
     {
       "name": "issue-flow",
       "source": "./",
-      "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue; per gli sviluppi grossi, una roadmap di progetto divisa in issue eseguite in sequenza; e, prima di tutto, la proposta dei prossimi passi letta dalla documentazione del progetto. Funziona su GitLab (glab) e GitHub (gh).",
-      "version": "1.6.0",
+      "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue; per gli sviluppi grossi, una roadmap di progetto divisa in issue eseguite a ondate, con il lavoro che si può parallelizzare affidato a più agenti, ognuno nel suo worktree git; e, prima di tutto, la proposta dei prossimi passi letta dalla documentazione del progetto. Funziona su GitLab (glab) e GitHub (gh).",
+      "version": "1.7.0",
       "category": "productivity",
       "keywords": [
         "issue",

@@ -21,7 +21,8 @@ solo di comando: `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — il file `TRACKER.md` nel
 questo plugin — dice quale si usa qui e come si traduce ogni comando dall'uno all'altro.
 Leggilo prima di lanciare il primo comando della sessione: i comandi qui sotto sono nelle due
 varianti, ma le trappole (il campo del corpo che cambia nome, il `--limit` di
-`gh issue list`, i CRLF) stanno lì.
+`gh issue list`, i CRLF) stanno lì. Leggi anche `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md`: dice quando
+due fasi si possono eseguire insieme, ed è questa skill a deciderlo e a scriverlo nella issue.
 
 ## Usage
 
@@ -65,6 +66,12 @@ comandi veri e non un generico «esegui i test»: gli script di `package.json`, 
 **Cosa va tenuto allineato alla fine.** `${user_config.docs_paths}` se configurati, altrimenti
 i file di documentazione che il progetto ha davvero — `README.md`, `docs/`, un changelog — e
 che la modifica renderebbe falsi.
+
+**Come si prepara un checkout nuovo.** Serve solo se la issue ha fasi in parallelo, che
+lavorano ognuna nel suo worktree di git: un worktree nasce senza dipendenze installate e senza
+i file che git ignora. Il comando — `npm ci`, `uv sync`, `poetry install`, la copia di un
+`.env.example` — si ricava come quelli di verifica, si prova se è economico, e si scrive nel
+**Contesto** della issue.
 
 Se una di queste non si ricava e serve, chiedila all'utente: è una domanda sola, e vale per
 tutte le issue che verranno.
@@ -174,7 +181,7 @@ Poi `AskUserQuestion`, con queste opzioni — nella descrizione di ognuna scrivi
 succede dopo, con i numeri della bozza:
 
 - **«Passa a /issue-flow:big-plan»** (Recommended): issue madre con la roadmap e le N figlie
-  della bozza, eseguite una alla volta;
+  della bozza, eseguite a ondate;
 - **«Apri solo la prima issue»**: questa skill prosegue con il primo incremento della bozza; il
   resto va nel **Fuori perimetro** della issue, un punto per ciascuna delle issue successive,
   così non si perde;
@@ -263,6 +270,26 @@ frontend, **la prima fase è il Figma**. Si lavora con la skill `figma:figma-use
 Figma e non viceversa; i componenti esistenti si ristrutturano in posto e non si ricreano, se
 no le istanze si staccano. Se la configurazione è vuota, questa fase non esiste: non
 inventarla.
+
+### Le fasi in parallelo
+
+Quando si può, le fasi si eseguono insieme: ognuna con il suo agente checkbox, ognuna nel suo
+worktree. Se si può lo decidi **tu, qui**, perché sei l'unico che ha fatto la ricognizione:
+chi esegue la issue lo trova scritto e non lo reinventa. Le condizioni sono quelle di
+`PARALLEL.md` §2 — perimetri disgiunti, nessuna fase che ha bisogno del codice dell'altra,
+un contratto scritto, nessuna risorsa condivisa nella verifica — e vanno controllate sui file
+letti in ricognizione, non sui titoli delle fasi.
+
+Come si scrive sta in `PARALLEL.md` §3 e nel template: la riga **Esecuzione** in testa al Piano,
+sempre, e per ogni fase di un gruppo il **Perimetro** — esaustivo: la fase tocca quei file e
+nient'altro — e il **Contratto** con le sorelle del gruppo, con i nomi e le forme esatti di
+quello che condividono. Il contratto lo scrivi tu: due agenti in parallelo non si vedono, e il
+loro lavoro combacia solo se l'hai deciso prima.
+
+Spesso il parallelo si ottiene spostando il confine: una fase che fissa l'interfaccia — il
+tipo, la firma, lo schema — e dopo di lei due fasi che ci si appoggiano da lati diversi.
+Non inventarlo dove non c'è: verifica, chiusura e Figma restano sempre in sequenza, e **nel
+dubbio, in sequenza**.
 
 ### Le checkbox
 
