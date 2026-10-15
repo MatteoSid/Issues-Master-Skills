@@ -4,8 +4,10 @@ The parent is not implemented: it holds the project roadmap and the list of the 
 execute it. The plan with the phases and the work checkboxes lives in the children, which follow
 `skills/plan/TEMPLATE.md`.
 
-The title stays outside the body: a short lowercase sentence that says what the product gains
-once the project is finished.
+The title stays outside the body: `[ROADMAP]` followed by a short lowercase sentence that says
+what the product gains once the project is finished — `[ROADMAP] notification preferences for
+every user`. The prefix is a marker (`TRACKER.md` §6): it stays as it is in any language, and it
+is what makes a parent stand out in the issue list.
 
 The sections are these, in this order, all mandatory except where stated. The text in square
 brackets is an instruction for the writer and must not be copied. Where the template gives two

@@ -148,6 +148,9 @@ bold label and status value the templates give. The skills and the `Stop` hook f
 phases, the boxes, the parent and the dependencies by these strings, so a translated marker
 is a marker that does not exist. Everything written under them is in the user's language.
 
+The same goes for the `[ROADMAP]` a parent's title starts with. Parents opened before 2.1 do not
+have it: what makes an issue a parent is still `**Type:** roadmap` at the top of the body.
+
 Issues written by issue-flow 1.x have the markers in Italian. When you **read** one, the
 Italian marker counts as its English equivalent; when you **rewrite** one, keep its markers as
 they are — a body with half its markers in one language and half in the other is read by

@@ -121,7 +121,8 @@ Always, with or without research-flow:
 
 The open issues, with a high `--limit` on GitHub (`TRACKER.md` §5):
 
-- the open **parents** — `**Type:** roadmap` at the top of the body — with children not yet
+- the open **parents** — `[ROADMAP]` at the start of the title, `**Type:** roadmap` at the top
+  of the body; parents opened by earlier versions have only the latter — with children not yet
   ticked: it is work already planned. It is not proposed again: the roadmap cites it as
   **already open** and starts after it, or builds on it as a dependency;
 - the open single issues: if a step you are about to propose already has its issue, the step

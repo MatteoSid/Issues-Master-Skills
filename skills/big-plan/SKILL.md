@@ -168,12 +168,12 @@ number in at step 8. The parent is opened first because the children must be abl
 from the very beginning.
 
 ```bash
-glab issue create --title "<title>" --description-file "$SCRATCH/parent.md" --yes   # GitLab
-gh   issue create --title "<title>" --body-file        "$SCRATCH/parent.md"         # GitHub
+glab issue create --title "[ROADMAP] <title>" --description-file "$SCRATCH/parent.md" --yes   # GitLab
+gh   issue create --title "[ROADMAP] <title>" --body-file        "$SCRATCH/parent.md"         # GitHub
 ```
 
-The parent's title says what the product gains once the project is finished, as for every
-issue. You read the number from the URL the command prints.
+The parent's title starts with `[ROADMAP]`, and after it says what the product gains once the
+project is finished, as for every issue. You read the number from the URL the command prints.
 
 ### 6. Write the children, one subagent per child
 
