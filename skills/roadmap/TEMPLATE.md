@@ -1,73 +1,75 @@
-# TEMPLATE — il file ROADMAP.md
+# TEMPLATE — the ROADMAP.md file
 
-Il file che `/issue-flow:roadmap` scrive nella radice del repo quando l'utente sceglie di
-salvare la roadmap invece di aprire le issue. Si riscrive per intero ogni volta: descrive i
-prossimi passi di oggi, e le versioni precedenti stanno nella storia di git.
+The file that `/issue-flow:roadmap` writes at the root of the repo when the user chooses to
+save the roadmap instead of opening the issues. It is rewritten in full every time: it describes
+today's next steps, and the previous versions live in git history.
 
-Le sezioni sono queste, in quest'ordine. Il testo fra parentesi quadre è istruzione per chi
-scrive e non va copiato. Le sezioni segnate facoltative si omettono se sono vuote.
+The sections are these, in this order. The text in square brackets is an instruction for the
+writer and is not copied. Sections marked optional are omitted when empty. The headings, bold
+labels and status values below are markers: copy them in English verbatim; write the rest in
+the user's language — `TRACKER.md` §6.
 
 ---
 
 # Roadmap
 
-**Aggiornata al GG-MM-AAAA** da `/issue-flow:roadmap`[ — focus: <focus>, se c'era].
+**Updated on YYYY-MM-DD** by `/issue-flow:roadmap`[ — focus: <focus>, if there was one].
 
-## Dove siamo
+## Where we are
 
-[Tre o quattro righe: cosa c'è oggi, cosa si sta facendo, qual è il prossimo traguardo.
-Ogni affermazione con la sua fonte.]
+[Three or four lines: what exists today, what is being worked on, what the next milestone is.
+Every statement with its source.]
 
-**Fonti lette:** [l'elenco: i documenti con il percorso — per research-flow l'ufficiale con la
-sua data e i registri —, la ROADMAP.md precedente se c'era, le issue aperte guardate (o «tracker
-non consultato»).]
+**Sources read:** [the list: the documents with their path — for research-flow the official
+document with its date and the registers —, the previous ROADMAP.md if there was one, the open
+issues looked at (or “tracker not consulted”).]
 
-## Prossimi passi
+## Next steps
 
-[In ordine di esecuzione. Ogni passo ha la dimensione di una issue, e si può aprire con
-`/issue-flow:plan` copiando il suo titolo e la sua descrizione. I passi di una stessa ondata
-non dipendono l'uno dall'altro, toccano parti diverse del codice e si possono eseguire insieme.]
+[In execution order. Every step is the size of an issue, and can be opened with
+`/issue-flow:plan` by copying its title and its description. The steps of the same wave do not
+depend on each other, touch different parts of the code and can be executed together.]
 
-**Ondate:** [in una riga: `1 → [2 ∥ 3] → 4`. Senza passi paralleli, `1 → 2 → 3 → 4`.]
+**Waves:** [in one line: `1 → [2 ∥ 3] → 4`. With no parallel steps, `1 → 2 → 3 → 4`.]
 
-### 1. [titolo: cosa cambia per chi usa il prodotto]
+### 1. [title: what changes for whoever uses the product]
 
-- **Consegna:** [cosa esiste a passo finito, in una o due righe]
-- **Perché adesso:** [il motivo della posizione, con le fonti: `TODO-012`, `ESP-031`,
-  `README.md` §Roadmap, `#45`, `percorso/file.py:88`. **Proposta nostra** se non viene da una
-  fonte]
-- **Dopo sappiamo:** [facoltativa: cosa si saprà — l'ipotesi che regge o cade, il criterio di
-  successo che si misura]
-- **Dipende da:** [il passo, un'attesa, una issue già aperta, oppure «niente»]
-- **In parallelo con:** [facoltativa, solo se l'ondata ha altri passi: quali, e dove tocca il
-  codice questo — i moduli o le cartelle —, così chi ne farà le issue vede il confine]
+- **Delivers:** [what exists once the step is done, in one or two lines]
+- **Why now:** [the reason for its position, with the sources: `TODO-012`, `ESP-031`,
+  `README.md` §Roadmap, `#45`, `path/file.py:88`. **Our proposal** if it does not come from a
+  source]
+- **Afterwards we know:** [optional: what we will know — the hypothesis that holds or falls, the
+  success criterion that gets measured]
+- **Depends on:** [the step, an item of Waiting on, an issue already open, or “nothing”]
+- **In parallel with:** [optional, only if the wave has other steps: which ones, and where this
+  one touches the code — the modules or folders —, so whoever turns them into issues sees the
+  boundary]
 
-### 2. [titolo]
+### 2. [title]
 
 […]
 
-## Già aperto
+## Already open
 
-[Facoltativa. Le issue e le madri già sul tracker su cui questa roadmap si appoggia, con il
-numero e cosa manca per chiuderle.]
+[Optional. The issues and parents already on the tracker this roadmap builds on, with their
+number and what is missing to close them.]
 
-## Attese
+## Waiting on
 
-[Facoltativa. Quello che non è lavoro nostro ma blocca o condiziona dei passi: domande alle
-fonti, dati da accumulare, decisioni di qualcun altro. Una riga ciascuna, con i passi che ne
-dipendono.]
+[Optional. What is not our work but blocks or conditions some steps: questions to the sources,
+data to accumulate, someone else's decisions. One line each, with the steps that depend on it.]
 
-## Dopo
+## Later
 
-[Facoltativa. Quello che viene oltre l'orizzonte, una riga per voce. Dopo un bivio, i due rami:
-«se ESP-031 è positivo → …; se è negativo → …».]
+[Optional. What comes beyond the horizon, one line per item. After a decision point, the two
+branches: “if ESP-031 is positive → …; if it is negative → …”.]
 
-## Lasciato fuori
+## Left out
 
-[Quello che le fonti danno da fare e questa roadmap non contiene, con il motivo: già fatto (e la
-fonte da correggere), superato, fuori focus, priorità bassa.]
+[What the sources give as to do and this roadmap does not contain, with the reason: already done
+(and the source to correct), superseded, out of focus, low priority.]
 
-## Incongruenze trovate
+## Inconsistencies found
 
-[Facoltativa. Fonti che non corrispondono al codice o al tracker: voci aperte già fatte, issue
-dimenticate, documenti più vecchi dei registri. Ognuna con chi deve correggerla.]
+[Optional. Sources that do not match the code or the tracker: open items already done, forgotten
+issues, documents older than the registers. Each with who has to correct it.]

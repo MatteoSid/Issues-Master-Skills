@@ -1,278 +1,285 @@
 ---
 name: roadmap
-description: "Propone la roadmap dei prossimi passi di un progetto leggendo la sua documentazione — i registri di research-flow se il repo li ha, altrimenti README, CLAUDE.md, docs, una ROADMAP.md precedente — più le issue aperte sul tracker e lo stato del codice. Ogni passo ha la sua fonte, il suo ordine e le sue dipendenze, ed è dimensionato come una issue. Approvata, la salva come ROADMAP.md nella radice del repo oppure la passa a /issue-flow:big-plan, che ne crea tutte le issue. Trigger: /issue-flow:roadmap, «quali sono i prossimi passi?», «proponi una roadmap», «cosa facciamo adesso?», «da dove ripartiamo?»."
-argument-hint: "[focus facoltativo: un'area, un obiettivo, un traguardo]"
+description: "Proposes the roadmap of a project's next steps by reading its documentation — the research-flow registers if the repo has them, otherwise README, CLAUDE.md, docs, a previous ROADMAP.md — plus the open issues on the tracker and the state of the code. Every step has its source, its order and its dependencies, and is sized like an issue. Once approved, saves it as ROADMAP.md at the repo root or hands it to /issue-flow:big-plan, which creates all its issues. Triggers: /issue-flow:roadmap, “what are the next steps?”, “propose a roadmap”, “what do we do now?”, “where do we pick up from?”; in Italian: «quali sono i prossimi passi?», «proponi una roadmap», «cosa facciamo adesso?», «da dove ripartiamo?»."
+argument-hint: "[optional focus: an area, a goal, a milestone]"
 ---
 
 # /issue-flow:roadmap
 
-`/issue-flow:plan` e `/issue-flow:big-plan` partono da una richiesta: qualcuno sa già cosa vuole
-fare. Questa skill viene prima, quando la domanda è **cosa facciamo adesso**. Legge quello che il
-progetto sa di sé — la documentazione, le issue aperte, il codice — e propone i prossimi passi in
-ordine, ognuno con il motivo per cui sta lì e la fonte da cui viene.
+`/issue-flow:plan` and `/issue-flow:big-plan` start from a request: someone already knows what
+they want to do. This skill comes before, when the question is **what do we do now**. It reads
+what the project knows about itself — the documentation, the open issues, the code — and
+proposes the next steps in order, each with the reason it sits there and the source it comes
+from.
 
-La roadmap approvata ha due uscite, a scelta dell'utente:
+The approved roadmap has two outputs, at the user's choice:
 
-- **un file**, `ROADMAP.md` nella radice del repo, da tenere e rileggere;
-- **le issue**: la skill passa la roadmap a `/issue-flow:big-plan`, che ne fa una issue madre e
-  una figlia per passo, ognuna scritta completa.
+- **a file**, `ROADMAP.md` at the repo root, to keep and re-read;
+- **the issues**: the skill hands the roadmap to `/issue-flow:big-plan`, which turns it into a
+  parent issue and one child per step, each written in full.
 
-Leggi `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md` — la skill `plan` di questo plugin — per
-come si scrive e per la dimensione di una issue, `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` per i
-comandi delle due piattaforme e `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` §2 per quando due passi si
-possono eseguire insieme. **Leggili prima del primo comando.**
+Read `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md` — this plugin's `plan` skill — for how to
+write and for the size of an issue, `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` for the commands of the
+two platforms and `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` §2 for when two steps can be executed
+together. **Read them before the first command.**
 
 ## Usage
 
 ```
-/issue-flow:roadmap                      # i prossimi passi del progetto, da tutta la documentazione
-/issue-flow:roadmap <focus>              # solo un'area o un traguardo: «il frontend», «andare live»
+/issue-flow:roadmap                      # the project's next steps, from all the documentation
+/issue-flow:roadmap <focus>              # only an area or a milestone: “the frontend”, “going live”
 ```
 
-## Il principio
+## The principle
 
-**Ogni passo della roadmap ha una fonte che si può ricontrollare.** Un ID di un registro, una
-sezione di un documento con il suo percorso, una issue, un `file:riga`. Quello che proponi di
-tuo — un rischio che la documentazione non vede, un passo che manca fra due che ci sono — si può
-proporre, ma si dichiara come **proposta nostra**, con il motivo: l'utente deve poter distinguere
-quello che il progetto dice di sé da quello che ne deduci tu.
+**Every step of the roadmap has a source that can be re-checked.** A register ID, a section of a
+document with its path, an issue, a `file:line`. What you propose on your own — a risk the
+documentation does not see, a step missing between two that are there — can be proposed, but it
+is declared as **our proposal**, with the reason: the user must be able to tell what the project
+says about itself from what you infer from it.
 
-La conseguenza pratica: una roadmap non si scrive a memoria di quello che si è visto nella
-conversazione. Si scrive dopo aver letto le fonti di questa sessione.
+The practical consequence: a roadmap is not written from memory of what was seen in the
+conversation. It is written after reading the sources in this session.
 
-## Processo
+## Process
 
-### 0. Quale tracker, e risponde
+### 0. Which tracker, and does it answer
 
-Identico al passo 0 di `plan`. Qui però il tracker non è indispensabile: serve per sapere cosa è
-già aperto, e per l'uscita «issue». Se non risponde e l'autenticazione è il problema, chiedi
-all'utente di farla; se l'utente preferisce andare avanti senza, prosegui, dichiara nella
-roadmap che le issue aperte non sono state guardate, e l'uscita «issue» non si offre.
+Same as step 0 of `plan`. Here, though, the tracker is not indispensable: it serves to know what
+is already open, and for the “issues” output. If it does not answer and authentication is the
+problem, ask the user to do it; if the user prefers to go on without it, proceed, state in the
+roadmap that the open issues were not looked at, and the “issues” output is not offered.
 
-### 1. Lavora come in plan mode, senza entrarci
+### 1. Work as in plan mode, without entering it
 
-Le stesse regole del passo 1 di `plan`: **mai `EnterPlanMode` né `ExitPlanMode`**, sola lettura
-fino all'approvazione, bivi chiesti mano a mano con `AskUserQuestion`, l'approvazione con
-`AskUserQuestion`, e **mai offrire di implementare**.
+The same rules as step 1 of `plan`: **never `EnterPlanMode` or `ExitPlanMode`**, read-only until
+approval, decision points asked as they come up with `AskUserQuestion`, approval with
+`AskUserQuestion`, and **never offer to implement**.
 
-### 2. Le fonti
+### 2. The sources
 
-Si leggono in quest'ordine, e ognuna dice cosa si trova e dove.
+They are read in this order, and each one says what is found and where.
 
-#### a. research-flow, se il repo lo usa
+#### a. research-flow, if the repo uses it
 
-Il segnale è il file `.research-flow.json` nella radice del repo. **Se non c'è, salta questa
-sezione**: il plugin research-flow non è un requisito, e senza i suoi registri la roadmap si fa
-con le fonti b–d.
+The signal is the `.research-flow.json` file at the repo root. **If it is not there, skip this
+section**: the research-flow plugin is not a requirement, and without its registers the roadmap
+is made from sources b–d.
 
-Se c'è, la configurazione dice la cartella (`dir`), i nomi dei cinque registri e del documento
-ufficiale (`ufficiale`). Sono la fonte principale, perché sono scritti apposta per dire cosa
-sappiamo, cosa manca e cosa è da provare. Da ognuno serve una parte sola:
+If it is there, the configuration gives the folder (`dir`), the names of the five registers and
+of the official document (`ufficiale`). They are the main source, because they are written
+precisely to say what we know, what is missing and what is to be tested. From each one you need
+only one part:
 
-| documento | cosa ne prendi |
+| document | what you take from it |
 |---|---|
-| ufficiale (`stato_progetto.md`) | §«Prossimi passi», §«Cosa manca», §«Cosa è da testare», §«Dove potremmo sbagliare», §«Cosa non abbiamo capito»; §«Strade scartate», per non riproporre quello che un esperimento ha già bocciato; la data in testa, **Aggiornato al** |
-| da fare (`TODO`) | le voci aperte P0 e P1 per fase, «In corso» e le domande in «Da chiedere alle fonti» |
-| esperimenti (`ESP`) | i proposti, con il loro criterio di successo |
-| ipotesi (`IP`) | quelle da verificare che reggono una scelta in vigore, con l'impatto se sono sbagliate |
-| dubbi (`DUB`) | gli aperti che toccano codice su cui i passi andranno a lavorare |
+| official (`stato_progetto.md`) | §«Prossimi passi» (next steps), §«Cosa manca» (what is missing), §«Cosa è da testare» (what is to be tested), §«Dove potremmo sbagliare» (where we could be wrong), §«Cosa non abbiamo capito» (what we have not understood); §«Strade scartate» (discarded paths), so as not to propose again what an experiment has already rejected; the date at the top, **Aggiornato al** (updated on) |
+| to do (`TODO`) | the open P0 and P1 items per phase, «In corso» (in progress) and the questions in «Da chiedere alle fonti» (to ask the sources) |
+| experiments (`ESP`) | the proposed ones, with their success criterion |
+| hypotheses (`IP`) | those still to verify that support a choice in force, with the impact if they are wrong |
+| doubts (`DUB`) | the open ones that touch code the steps will work on |
 
-I registri possono essere lunghi: non leggerli per intero. Se il plugin research-flow è
-installato, il suo script dà lo stato senza aprire i file:
+The registers can be long: do not read them in full. If the research-flow plugin is installed,
+its script gives the state without opening the files:
 
 ```bash
 RF=$(jq -r '.plugins["research-flow@research-flow"][0].installPath // empty' \
        ~/.claude/plugins/installed_plugins.json 2>/dev/null)
-python3 "$RF/scripts/registri.py" riepilogo   # voci per registro e per stato
-python3 "$RF/scripts/registri.py" check       # tra l'altro: l'ufficiale è più vecchio dei registri?
-python3 "$RF/scripts/registri.py" find TODO-012   # una voce, chi la cita, il suo stato
+python3 "$RF/scripts/registri.py" riepilogo   # items per register and per status
+python3 "$RF/scripts/registri.py" check       # among other things: is the official document older than the registers?
+python3 "$RF/scripts/registri.py" find TODO-012   # one item, who cites it, its status
 ```
 
-Se `$RF` è vuoto o lo script manca, lavora sui file che la configurazione indica, con `grep`
-sugli stati e sulle intestazioni di sezione: i registri sono markdown leggibili anche senza.
+If `$RF` is empty or the script is missing, work on the files the configuration points to, with
+`grep` on the statuses and on the section headings: the registers are markdown, readable without
+it too.
 
-**Se l'ufficiale è più vecchio dei registri** — `check` lo segnala, o la data in testa è
-anteriore alle ultime voci — i registri vincono: la roadmap parte da loro, lo dici nel
-riassunto, e proponi `/research-flow:stato` per riallineare l'ufficiale. Non riscriverlo tu:
-i documenti di research-flow li scrivono le skill di research-flow.
+**If the official document is older than the registers** — `check` flags it, or the date at the
+top predates the latest items — the registers win: the roadmap starts from them, you say so in
+the summary, and you propose `/research-flow:stato` to realign the official document. Do not
+rewrite it yourself: research-flow's documents are written by research-flow's skills.
 
-In un progetto esplorativo una parte dei prossimi passi non è codice: un esperimento, una misura,
-una domanda a una fonte. Gli esperimenti e le misure che richiedono script o modifiche al codice
-**sono** passi, e diventano issue come gli altri; le domande alle fonti e le attese (dati da
-accumulare, una risposta che deve arrivare) no: vanno fra le **Attese**, e i passi che dipendono
-da loro lo dicono.
+In an exploratory project part of the next steps is not code: an experiment, a measurement, a
+question to a source. Experiments and measurements that need scripts or code changes **are**
+steps, and become issues like the others; questions to the sources and waits (data to
+accumulate, an answer that has to arrive) are not: they go under **Waiting on**, and the steps
+that depend on them say so.
 
-#### b. La documentazione del progetto
+#### b. The project's documentation
 
-Sempre, con o senza research-flow:
+Always, with or without research-flow:
 
-- `ROADMAP.md` nella radice, se c'è: è la roadmap di una volta precedente. **Confrontala con lo
-  stato di oggi** — quali passi sono stati fatti (issue chiuse, codice presente), quali sono
-  caduti, quali restano — e dillo nel riassunto;
-- `CLAUDE.md` e `README.md`: l'obiettivo del progetto, le fasi o la roadmap se le dichiarano, i
-  vincoli;
-- `${user_config.docs_paths}` se configurati, altrimenti `docs/`, un `TODO.md`, un `CHANGELOG`
-  se ci sono: per le cose annunciate e non ancora fatte.
+- `ROADMAP.md` at the root, if there is one: it is the roadmap of a previous round. **Compare it
+  with today's state** — which steps were done (issues closed, code present), which were
+  dropped, which remain — and say so in the summary;
+- `CLAUDE.md` and `README.md`: the project's goal, the phases or the roadmap if they declare
+  them, the constraints;
+- `${user_config.docs_paths}` if configured, otherwise `docs/`, a `TODO.md`, a `CHANGELOG` if
+  there are any: for the things announced and not yet done.
 
-#### c. Il tracker
+#### c. The tracker
 
-Le issue aperte, con `--limit` alto su GitHub (`TRACKER.md` §5):
+The open issues, with a high `--limit` on GitHub (`TRACKER.md` §5):
 
-- le **madri** aperte — `**Tipo:** roadmap` in testa al corpo — con le figlie non ancora
-  spuntate: è lavoro già pianificato. Non va riproposto: la roadmap lo cita come **già aperto**
-  e parte da dopo, oppure ci si appoggia come dipendenza;
-- le issue singole aperte: se un passo che stai per proporre ha già la sua issue, il passo la
-  cita invece di duplicarla.
-- **le issue che le fonti citano** — «in corso (#29)», «resta da unire #48» — si controllano
-  sul tracker una per una: una fonte che dà in corso una issue già chiusa è un'incongruenza da
-  segnalare, e il passo che ne dipendeva forse è già sbloccato. `registri.py check` non lo vede:
-  controlla la coerenza dei registri fra loro, non con il tracker.
+- the open **parents** — `**Type:** roadmap` at the top of the body — with children not yet
+  ticked: it is work already planned. It is not proposed again: the roadmap cites it as
+  **already open** and starts after it, or builds on it as a dependency;
+- the open single issues: if a step you are about to propose already has its issue, the step
+  cites it instead of duplicating it.
+- **the issues the sources cite** — “in progress (#29)”, “#48 still to merge” — are checked on
+  the tracker one by one: a source that gives as in progress an issue that is already closed is
+  an inconsistency to flag, and the step that depended on it may already be unblocked.
+  `registri.py check` does not see it: it checks the consistency of the registers among
+  themselves, not with the tracker.
 
-#### d. Il codice e la storia
+#### d. The code and the history
 
-Serve a verificare, non a inventare passi:
+It serves to verify, not to invent steps:
 
-- `git log --oneline -30` e i branch aperti: su cosa si sta lavorando adesso;
-- per ogni passo candidato, **controlla nel codice che non sia già fatto.** Un TODO rimasto
-  aperto nel registro, una riga del README mai aggiornata, una issue dimenticata aperta sono il
-  caso normale, non l'eccezione. Un passo che risulta già fatto non entra in roadmap: lo segnali
-  nel riassunto, perché la fonte che lo dava da fare va corretta.
+- `git log --oneline -30` and the open branches: what is being worked on right now;
+- for every candidate step, **check in the code that it is not already done.** A TODO left open
+  in the register, a README line never updated, a forgotten open issue are the normal case, not
+  the exception. A step that turns out to be already done does not go in the roadmap: you flag
+  it in the summary, because the source that listed it as to do needs correcting.
 
-Non serve qui la ricognizione per `file:riga` di ogni fase: quella la fanno `big-plan` e i suoi
-writer, se la roadmap diventa issue.
+The `file:line` reconnaissance of every phase is not needed here: `big-plan` and its writers do
+it, if the roadmap becomes issues.
 
-### 3. Il focus, se c'è
+### 3. The focus, if there is one
 
-Con un argomento, la roadmap copre solo quell'area o quel traguardo. Le fonti si leggono lo
-stesso tutte — un passo fuori focus può essere una dipendenza di uno dentro — ma in roadmap
-entrano solo i passi del focus e le loro dipendenze dichiarate come tali.
+With an argument, the roadmap covers only that area or that milestone. All the sources are read
+anyway — a step outside the focus can be a dependency of one inside it — but only the focus's
+steps and their dependencies, declared as such, go into the roadmap.
 
-Senza argomento, se le fonti indicano più direzioni che non stanno in una roadmap sola — due fasi
-del progetto aperte insieme, due aree che non si toccano — chiedi con `AskUserQuestion` su quale
-concentrarsi, con una riga per direzione e le fonti che la sostengono.
+Without an argument, if the sources point in more directions than fit in a single roadmap — two
+project phases open at once, two areas that do not touch — ask with `AskUserQuestion` which one
+to concentrate on, with one line per direction and the sources that support it.
 
-### 4. Costruisci la roadmap
+### 4. Build the roadmap
 
-Le regole:
+The rules:
 
-- **un passo è una issue.** Ogni passo ha la dimensione di una issue di `plan`: un incremento
-  che si unisce da solo, da 5 a 8 fasi. Se un passo è più grande, dividilo; se due sono piccoli e
-  toccano la stessa cosa, uniscili. È la condizione perché `big-plan` possa farne una figlia per
-  passo;
-- **prima quello che toglie incertezza.** I P0, le ipotesi con impatto alto su cui altri passi
-  si appoggiano, gli esperimenti il cui esito decide fra due strade, il modello dei dati prima di
-  chi lo usa. Poi quello che ci si costruisce sopra;
-- **l'ordine è esplicito e le dipendenze sono dichiarate**, e i passi stanno in **ondate**
-  come le figlie di `big-plan`: due passi che non dipendono l'uno dall'altro e toccano parti
-  diverse del codice — guardate nel codice, non dal titolo — vanno nella stessa ondata, e
-  diventeranno figlie che `big-implement` esegue insieme. Qui basta il confine grosso: i moduli
-  o le cartelle di ognuno, e i file che toccherebbero entrambi (`PARALLEL.md` §2). Perimetri
-  esatti e contratti li fissa `big-plan` dopo la sua ricognizione, e può cambiare le ondate. Nel
-  dubbio, ondate di un passo solo;
-- **i vincoli di esercizio pesano sull'ordine.** Un test che gira e non va interrotto, un
-  ambiente che non si può riavviare, un congelamento prima di un rilascio: cercali nelle fonti e
-  guarda quali passi li toccano — nel codice, non dal titolo. Se un vincolo blocca metà dei passi,
-  come ordinarli è un bivio da chiedere all'utente, non una scelta da prendere da solo;
-- **l'orizzonte si ferma al primo bivio che non si può decidere adesso.** Se un passo dipende
-  dall'esito di un esperimento o dalla risposta di una fonte, la roadmap arriva fin lì e dopo
-  scrive i due rami in una riga ciascuno, sotto **Dopo**. Pianificare in dettaglio oltre un esito
-  che non si conosce è indovinare;
-- **da 3 a 8 passi.** Meno di 3 non è una roadmap: con un passo solo proponi `/issue-flow:plan`,
-  con due valuta se sono una issue sola. Più di 8 vuol dire che l'orizzonte è troppo lungo: i
-  passi oltre l'ottavo vanno sotto **Dopo**;
-- **per ogni passo**: un titolo che dice cosa cambia per chi usa il prodotto — come il titolo di
-  una issue —, cosa consegna, perché sta lì con le fonti (`TODO-012`, `ESP-031`, `README.md`
-  §Roadmap, `#45`, `backend/app/x.py:88`), da quale passo dipende, la sua ondata e — se l'ondata
-  ha altri passi — dove tocca il codice, se chiude o rende verificabile qualcosa (un'ipotesi, un
-  dubbio, un criterio di successo).
+- **a step is an issue.** Every step is the size of a `plan` issue: an increment that merges on
+  its own, 5 to 8 phases. If a step is bigger, split it; if two are small and touch the same
+  thing, merge them. It is the condition for `big-plan` to make one child per step;
+- **first what removes uncertainty.** The P0s, the high-impact hypotheses other steps rest on,
+  the experiments whose outcome decides between two paths, the data model before whoever uses
+  it. Then what gets built on top;
+- **the order is explicit and the dependencies are declared**, and the steps sit in **waves**
+  like the children of `big-plan`: two steps that do not depend on each other and touch
+  different parts of the code — looked at in the code, not from the title — go in the same
+  wave, and will become children that `big-implement` executes together. Here the coarse
+  boundary is enough: the modules or folders of each, and the files both would touch
+  (`PARALLEL.md` §2). Exact scopes and contracts are fixed by `big-plan` after its
+  reconnaissance, and it can change the waves. When in doubt, single-step waves;
+- **operational constraints weigh on the order.** A test that is running and must not be
+  interrupted, an environment that cannot be restarted, a freeze before a release: look for them
+  in the sources and see which steps touch them — in the code, not from the title. If a
+  constraint blocks half the steps, how to order them is a decision point to ask the user about,
+  not a choice to make on your own;
+- **the horizon stops at the first decision point that cannot be decided now.** If a step
+  depends on the outcome of an experiment or on a source's answer, the roadmap goes up to there
+  and after it writes the two branches, one line each, under **Later**. Planning in detail
+  beyond an outcome nobody knows yet is guessing;
+- **3 to 8 steps.** Fewer than 3 is not a roadmap: with a single step propose
+  `/issue-flow:plan`, with two consider whether they are a single issue. More than 8 means the
+  horizon is too long: the steps beyond the eighth go under **Later**;
+- **for every step**: a title that says what changes for whoever uses the product — like the
+  title of an issue —, what it delivers, why it sits there with the sources (`TODO-012`,
+  `ESP-031`, `README.md` §Roadmap, `#45`, `backend/app/x.py:88`), which step it depends on, its
+  wave and — if the wave has other steps — where it touches the code, whether it closes or makes
+  verifiable something (a hypothesis, a doubt, a success criterion).
 
-Tieni da parte, per il riassunto e per il file:
+Set aside, for the summary and for the file:
 
-- **Attese**: le domande alle fonti, i dati da accumulare, le decisioni che spettano a qualcun
-  altro, con i passi che ne dipendono;
-- **Dopo**: quello che viene oltre l'orizzonte, una riga per voce;
-- **Lasciato fuori**: quello che le fonti danno da fare e che non hai messo in roadmap, con il
-  motivo (già fatto, superato da una decisione, fuori focus, priorità bassa). È la sezione che
-  permette all'utente di dire «no, questo va dentro».
+- **Waiting on**: the questions to the sources, the data to accumulate, the decisions that are
+  up to someone else, with the steps that depend on them;
+- **Later**: what comes beyond the horizon, one line per item;
+- **Left out**: what the sources give as to do and you did not put in the roadmap, with the
+  reason (already done, superseded by a decision, out of focus, low priority). It is the section
+  that lets the user say “no, this goes in”.
 
-### 5. Presentala e fatti approvare
+### 5. Present it and get it approved
 
-Scrivi in chat un riassunto:
+Write a summary in the chat:
 
-- **le fonti lette**: se c'era research-flow e da quale data è l'ufficiale, la `ROADMAP.md`
-  precedente e cosa ne resta, le issue aperte trovate; se hai letto documenti con modifiche non
-  committate, dillo (`git status`), perché la roadmap poggia su quella versione;
-- **dove siamo**, in tre o quattro righe;
-- **i passi**, numerati e divisi per ondata, una riga ciascuno con cosa consegna, le fonti e la
-  dipendenza;
-- le **Attese**, il **Dopo** e il **Lasciato fuori**, brevi;
-- le incongruenze trovate fra fonti e codice (passi già fatti ma aperti nei registri, issue
-  dimenticate), perché qualcuno le corregga.
+- **the sources read**: whether there was research-flow and what date the official document
+  has, the previous `ROADMAP.md` and what is left of it, the open issues found; if you read
+  documents with uncommitted changes, say so (`git status`), because the roadmap rests on that
+  version;
+- **where we are**, in three or four lines;
+- **the steps**, numbered and split by wave, one line each with what it delivers, the sources
+  and the dependency;
+- the **Waiting on**, the **Later** and the **Left out**, brief;
+- the inconsistencies found between sources and code (steps already done but open in the
+  registers, forgotten issues), so that someone corrects them.
 
-Poi `AskUserQuestion`, con queste opzioni — nella descrizione di ognuna scrivi in concreto cosa
-succede dopo, con i numeri della roadmap:
+Then `AskUserQuestion`, with these options — in the description of each one write concretely
+what happens next, with the roadmap's numbers:
 
-- **«Crea le issue con big-plan»**: una madre con la roadmap e una figlia per passo, scritte da
-  `big-plan`;
-- **«Salva in ROADMAP.md»**: il file nella radice del repo, niente sul tracker;
-- **«Cambia qualcosa»**: l'utente dice cosa, tu correggi e richiedi;
-- **«Lascia stare»**: non scrivi niente e ti fermi.
+- **“Create the issues with big-plan”**: a parent with the roadmap and one child per step,
+  written by `big-plan`;
+- **“Save to ROADMAP.md”**: the file at the repo root, nothing on the tracker;
+- **“Change something”**: the user says what, you correct it and ask again;
+- **“Drop it”**: you write nothing and stop.
 
-Il **Recommended** va a «Crea le issue» quando tutti i passi sono lavoro concreto e deciso, a
-«Salva in ROADMAP.md» quando la roadmap è soprattutto esplorativa — passi che aspettano esiti,
-bivi vicini — e aprire issue adesso vorrebbe dire riscriverle presto. Se l'utente chiede tutte e
-due, con la risposta libera, prima salvi il file e poi passi a `big-plan`. Se manca il tracker,
-«Crea le issue» non si offre.
+**Recommended** goes to “Create the issues” when all the steps are concrete, decided work, to
+“Save to ROADMAP.md” when the roadmap is mostly exploratory — steps waiting on outcomes,
+decision points close by — and opening issues now would mean rewriting them soon. If the user
+asks for both, with the free-text answer, first save the file and then move on to `big-plan`. If
+the tracker is missing, “Create the issues” is not offered.
 
-### 6a. Salva in `ROADMAP.md`
+### 6a. Save to `ROADMAP.md`
 
-Il file è `ROADMAP.md` nella radice del repo (`git rev-parse --show-toplevel`), e segue
-`TEMPLATE.md`, il file accanto a questo.
+The file is `ROADMAP.md` at the repo root (`git rev-parse --show-toplevel`), and it follows
+`TEMPLATE.md`, the file next to this one.
 
-Se esiste già, l'hai letto al passo 2: si **riscrive**, non si appende — descrive i prossimi
-passi di oggi, e la versione vecchia resta nella storia di git. Nel riassunto di consegna di'
-cosa è cambiato rispetto a quella.
+If it already exists, you read it in step 2: it is **rewritten**, not appended to — it describes
+today's next steps, and the old version stays in git history. In the hand-off summary say what
+changed compared with it.
 
-Non committare: il file resta nell'albero di lavoro, e dillo all'utente. Se il progetto usa
-research-flow e la roadmap diverge da §«Prossimi passi» dell'ufficiale, proponi
-`/research-flow:stato` per allinearlo; non toccare tu i suoi documenti.
+Do not commit: the file stays in the working tree, and tell the user so. If the project uses
+research-flow and the roadmap diverges from §«Prossimi passi» of the official document, propose
+`/research-flow:stato` to align it; do not touch its documents yourself.
 
-### 6b. Crea le issue con `big-plan`
+### 6b. Create the issues with `big-plan`
 
-Carica la skill `issue-flow:big-plan` con il tool `Skill`, nella stessa conversazione. Da quel
-momento vale `big-plan`, che sa di arrivare da qui (la sua sezione «Quando arrivi da
-`/issue-flow:roadmap`») e riusa quello che hai già fatto: il tracker verificato, le fonti lette,
-la roadmap approvata come bozza della divisione in figlie.
+Load the `issue-flow:big-plan` skill with the `Skill` tool, in the same conversation. From that
+moment `big-plan` is in charge: it knows it comes from here (its section “When you come from
+`/issue-flow:roadmap`”) and reuses what you have already done: the verified tracker, the sources
+read, the approved roadmap as the draft of the split into children.
 
-Nel passaggio le devono arrivare, già scritti in conversazione nel riassunto del passo 5:
+In the handover it must receive, already written in the conversation in the step 5 summary:
 
-- l'obiettivo della roadmap, che diventa l'**Obiettivo** della madre;
-- i passi con titolo, cosa consegna, fonti, dipendenze, ondata e dove toccano il codice: una
-  figlia per passo, e le ondate come bozza di quelle della madre;
-- **Attese**, **Dopo** e **Lasciato fuori**, che finiscono nel **Contesto** e nel **Fuori
-  perimetro** della madre;
-- se la roadmap viene da research-flow, la corrispondenza fra passi e voci dei registri
-  (`passo 2 ← TODO-012, ESP-031`), perché la consegna dica quali voci segnare `in corso` con la
-  loro issue.
+- the roadmap's goal, which becomes the parent's **Goal**;
+- the steps with title, what they deliver, sources, dependencies, wave and where they touch the
+  code: one child per step, and the waves as a draft of the parent's;
+- **Waiting on**, **Later** and **Left out**, which end up in the parent's **Context** and **Out
+  of scope**;
+- if the roadmap comes from research-flow, the mapping between steps and register items
+  (`step 2 ← TODO-012, ESP-031`), so that the hand-off says which items to mark `in corso` with
+  their issue.
 
-### 7. Consegna
+### 7. Hand-off
 
-Per l'uscita file: il percorso del file, cosa è cambiato rispetto alla roadmap precedente, le
-incongruenze trovate fra fonti e codice, e come si parte — `/issue-flow:plan` sul primo passo, o
-`/issue-flow:roadmap` di nuovo con «crea le issue» quando i bivi saranno decisi.
+For the file output: the file's path, what changed compared with the previous roadmap, the
+inconsistencies found between sources and code, and how to start — `/issue-flow:plan` on the
+first step, or `/issue-flow:roadmap` again with “create the issues” once the decision points are
+decided.
 
-Per l'uscita issue la consegna la fa `big-plan`.
+For the issues output, the hand-off is done by `big-plan`.
 
-Non incollare la roadmap nella risposta finale: l'utente l'ha già vista al passo 5, e il file o
-la madre sono dove si rilegge.
+Do not paste the roadmap in the final answer: the user already saw it in step 5, and the file or
+the parent is where it gets re-read.
 
-## Come si scrive
+## How to write
 
-Come in `plan`: prosa densa, italiano, identificatori in originale, niente stime in ore o giorni,
-niente `TBD`. In più:
+As in `plan`: dense prose, in the user's language with the markers in English (`TRACKER.md`
+§6), identifiers in the original, no estimates in hours or days, no `TBD`. In addition:
 
-- le fonti si citano **sempre** con il loro riferimento preciso — ID, percorso e sezione, numero
-  di issue — mai «come dice la documentazione»;
-- **proposta nostra** in grassetto dove un passo o una motivazione non vengono da una fonte;
-- i passi di un progetto esplorativo dicono **cosa si saprà** dopo, non solo cosa si farà: «dopo
-  questo passo sappiamo se IP-014 regge» vale più di «implementare il backtest».
+- sources are **always** cited with their precise reference — ID, path and section, issue
+  number — never “as the documentation says”;
+- **our proposal** in bold where a step or a reason does not come from a source;
+- the steps of an exploratory project say **what we will know** afterwards, not only what we
+  will do: “after this step we know whether IP-014 holds” is worth more than “implement the
+  backtest”.

@@ -1,183 +1,196 @@
 # Issue Flow
 
-Dalla richiesta alla merge request passando per una issue che contiene il piano **e** la
-roadmap che lo esegue. Sei skill che si passano il lavoro, e che fanno lavorare più agenti insieme dove si può, su **GitLab** (`glab`) o **GitHub**
-(`gh`) indifferentemente: la piattaforma si deduce dal remote.
+From the request to the merge request, by way of an issue that holds the plan **and** the
+roadmap that executes it. Six skills that hand work to each other, and that put several agents
+to work together where possible, on **GitLab** (`glab`) or **GitHub** (`gh`) alike: the
+platform is inferred from the remote.
 
-Il principio che tiene insieme tutto: *la issue deve essere eseguibile da un agente che non ha
-assistito alla conversazione.* Da lì discendono i riferimenti `file.ts:42` verificati, i numeri
-misurati e non stimati, le decisioni scritte con la loro motivazione, il fuori perimetro
-esplicito.
+The principle that holds it all together: *the issue must be executable by an agent that was
+not present for the conversation.* From there follow the verified `file.ts:42` references, the
+numbers measured rather than estimated, the decisions written down with their reasons, the
+explicit out of scope.
 
-| skill | cosa fa |
+| skill | what it does |
 |---|---|
-| `/issue-flow:roadmap` | **cosa facciamo adesso**: legge la documentazione del progetto — i registri di [research-flow](https://github.com/MatteoSid/Research-Master-Skills) se ci sono, se no README, CLAUDE.md, docs — più le issue aperte e il codice, e propone i prossimi passi con le loro fonti; approvata, la salva in `ROADMAP.md` o ne crea le issue con `big-plan` |
-| `/issue-flow:plan` | **una feature**: ricognizione nel codice, bivi chiesti all'utente, poi apre la issue con dentro piano e roadmap a checkbox |
-| `/issue-flow:big-plan` | **uno sviluppo grosso**: definisce la roadmap del progetto in una issue madre e la divide in issue figlie a ondate, con perimetri e contratti per quelle che lavoreranno insieme; ogni figlia la scrive completa un subagent, tutti in parallelo |
-| `/issue-flow:implement` | esegue la roadmap una fase per subagent — le fasi di un gruppo parallelo insieme, ognuna nel suo worktree —, spunta le caselle mano a mano, un commit per fase; lavora come un `/goal` e non si ferma finché la roadmap non è completa; sulla madre prende la prima figlia aperta |
-| `/issue-flow:big-implement` | porta avanti tutte le figlie di una madre in una volta sul branch della madre: un'ondata alla volta, le figlie di un'ondata insieme, ognuna nel suo worktree e affidata a un subagent che fa il giro di `implement` e di `close`, che la unisce da sola nel branch della madre, una alla volta; alla fine apre la MR/PR della madre, che unisci tu |
-| `/issue-flow:close` | verifica l'albero finale, apre la MR/PR, e a merge avvenuto chiude la issue e la spunta sulla madre; la figlia di un progetto con il branch della madre la unisce lì da sola |
+| `/issue-flow:roadmap` | **what do we do now**: reads the project's documentation — the [research-flow](https://github.com/MatteoSid/Research-Master-Skills) registers if there are any, otherwise README, CLAUDE.md, docs — plus the open issues and the code, and proposes the next steps with their sources; once approved, saves it to `ROADMAP.md` or creates its issues with `big-plan` |
+| `/issue-flow:plan` | **one feature**: reconnaissance in the code, decision points asked to the user, then opens the issue with the plan and a checkbox roadmap inside |
+| `/issue-flow:big-plan` | **a big development**: defines the project's roadmap in a parent issue and splits it into child issues in waves, with scopes and contracts for those that will work together; each child is written in full by a subagent, all in parallel |
+| `/issue-flow:implement` | executes the roadmap one phase per subagent — the phases of a parallel group together, each in its own worktree —, ticks the boxes as it goes, one commit per phase; works like a `/goal` and does not stop until the roadmap is complete; on a parent it takes the first open child |
+| `/issue-flow:big-implement` | carries all the children of a parent in one go on the parent branch: one wave at a time, the children of a wave together, each in its own worktree and handed to a subagent that does the `implement` and `close` rounds, and `close` merges it into the parent branch on its own, one at a time; at the end it opens the parent's MR/PR, which you merge |
+| `/issue-flow:close` | verifies the final tree, opens the MR/PR, and once merged closes the issue and ticks it on the parent; the child of a project with a parent branch it merges there on its own |
 
-Più tre subagent: `issue-flow:issue-phase`, l'agente checkbox, che esegue una singola fase e non
-può committare né toccare la issue — quello lo fa l'orchestratore, dopo aver verificato l'output
-vero —;
-`issue-flow:issue-runner`, che per `big-implement` porta una figlia dal branch al merge nel
-branch della madre, orchestrandone le fasi con un `issue-phase` ciascuna, così il contesto della
-sessione principale resta quello del progetto e non si riempie delle fasi di tutte le figlie; e
-`issue-flow:issue-writer`, che scrive il corpo di una issue figlia di `big-plan` in un file e non
-può creare issue: le crea l'orchestratore, in ordine, dopo averle controllate.
+Plus three subagents: `issue-flow:issue-phase`, the checkbox agent, which executes a single
+phase and cannot commit or touch the issue — the orchestrator does that, after verifying the
+real output —;
+`issue-flow:issue-runner`, which for `big-implement` takes a child from the branch to the merge
+into the parent branch, orchestrating its phases with one `issue-phase` each, so the main
+session's context stays the project's and does not fill up with the phases of all the children;
+and `issue-flow:issue-writer`, which writes the body of a `big-plan` child issue to a file and
+cannot create issues: the orchestrator creates them, in order, after checking them.
 
-## Chi lavora insieme
+## Who works together
 
-Quando si può, il lavoro si parallelizza: e si decide **quando si pianifica**, non quando si
-esegue. La roadmap e le issue dicono già cosa va insieme, e chi esegue lo ricontrolla e lo segue.
+When possible, work is parallelized: and it is decided **when planning**, not when executing.
+The roadmap and the issues already say what goes together, and whoever executes re-checks it
+and follows it.
 
-| ruolo | chi è | assegna il lavoro a |
+| role | who it is | assigns work to |
 |---|---|---|
-| **agente di roadmap** | `big-plan`, e all'esecuzione `big-implement` | un `issue-writer` per figlia; un agente di Issue per figlia |
-| **agente di Issue** | `implement`, o il subagent `issue-runner` | un agente checkbox per fase |
-| **agente checkbox** | il subagent `issue-phase` | — porta a termine le checkbox di una fase |
+| **roadmap agent** | `big-plan`, and at execution `big-implement` | one `issue-writer` per child; one Issue agent per child |
+| **Issue agent** | `implement`, or the `issue-runner` subagent | one checkbox agent per phase |
+| **checkbox agent** | the `issue-phase` subagent | — completes the checkboxes of one phase |
 
-- **Nella roadmap** le figlie stanno in **ondate**: quelle di un'ondata non dipendono l'una
-  dall'altra e si eseguono insieme, e la madre ha una sezione **Parallelismo** con il perimetro
-  di ognuna — i file che può toccare, disgiunti — e il **contratto** fra loro: i tipi, le
-  interfacce, i formati che condividono, con i nomi esatti. Anche `/issue-flow:roadmap` segna
-  quali passi possono andare insieme.
-- **In ogni issue** il Piano si apre con la riga **Esecuzione** — `1 → 2 → [3 ∥ 4] → 5 → 6` — e
-  ogni fase di un gruppo parallelo ha il suo **Perimetro** e il suo **Contratto**.
-- **All'esecuzione** ogni agente che lavora insieme ad altri ha il suo **worktree git**, su un
-  branch suo, dentro `.git/issue-flow/wt/`: nessuno scrive nella cartella di un altro. Le fasi
-  di un gruppo si integrano con un cherry-pick in ordine, le figlie di un'ondata con il loro
-  `close`, una alla volta; dopo ogni integrazione la verifica gira sull'albero unito.
+- **In the roadmap** the children sit in **waves**: those of a wave do not depend on each other
+  and run together, and the parent has a **Parallelism** section with the scope of each — the
+  files it can touch, disjoint — and the **contract** between them: the types, the interfaces,
+  the formats they share, with the exact names. `/issue-flow:roadmap` also marks which steps can
+  go together.
+- **In every issue** the Plan opens with the **Execution** line — `1 → 2 → [3 ∥ 4] → 5 → 6` —
+  and every phase of a parallel group has its own **Scope** and its own **Contract**.
+- **At execution** every agent that works alongside others has its own **git worktree**, on a
+  branch of its own, inside `.git/issue-flow/wt/`: nobody writes in someone else's folder. The
+  phases of a group are integrated with an in-order cherry-pick, the children of a wave with
+  their `close`, one at a time; after each integration the verification runs on the merged tree.
 
-La regola che regge tutto: **il lavoro di due agenti in parallelo lo concorda l'agente che glielo
-assegna**, prima di assegnarlo. Gli agenti in parallelo non si vedono: il loro lavoro combacia
-perché perimetri e contratto li ha decisi chi sta sopra, e chi sta sopra li riconferma sul codice
-di adesso prima di partire. Se non reggono più, quel gruppo va in sequenza. Un conflitto
-all'integrazione vuol dire che l'accordo non reggeva: non lo risolve nessuno a mano, ci si ferma
-e si correggono le issue. Le regole complete sono in `PARALLEL.md`.
+The rule that holds everything up: **the work of two agents in parallel is agreed on by the
+agent that assigns it**, before assigning it. Agents in parallel do not see each other: their
+work fits because scopes and contract were decided by whoever is above, and whoever is above
+re-confirms them on the current code before starting. If they no longer hold, that group goes
+in sequence. A conflict at integration means the agreement did not hold: nobody resolves it by
+hand, everything stops and the issues get corrected. The full rules are in `PARALLEL.md`.
 
-## Installazione
+## Installation
 
 ```
 /plugin marketplace add https://github.com/MatteoSid/Issues-Master-Skills.git
 /plugin install issue-flow@issue-flow
 ```
 
-Il `marketplace add` clona con le credenziali git della macchina, quindi va bene anche l'SSH:
+`marketplace add` clones with the machine's git credentials, so SSH works too:
 `git@github.com:MatteoSid/Issues-Master-Skills.git`.
 
-Serve git 2.5 o successivo, per i worktree. Serve `glab` o `gh` installato e autenticato — le skill lo controllano al passo 0 e si fermano
-con il comando da lanciare se manca. Il login è interattivo e Claude non può farlo. Serve
-anche `jq`, che usa l'hook di `implement`.
+You need git 2.5 or later, for worktrees. You need `glab` or `gh` installed and authenticated —
+the skills check it at step 0 and stop with the command to run if it is missing. Login is
+interactive and Claude cannot do it. You also need `jq`, which the `implement` hook uses.
 
-## Configurazione
+## Configuration
 
-Tutte le opzioni sono facoltative: senza, le skill ricavano quello che serve dal repo. Si
-impostano quando abiliti il plugin, o con `claude plugin install --config chiave=valore`.
+All options are optional: without them, the skills infer what they need from the repo. They are
+set when you enable the plugin, or with `claude plugin install --config key=value`.
 
-| opzione | default | a cosa serve |
+| option | default | what it is for |
 |---|---|---|
-| `default_branch` | dal repo | il branch in cui vengono unite le MR/PR |
-| `branch_prefix` | `issue-` | il branch di lavoro è `<prefisso><numero della issue>` |
-| `verify_commands` | dal progetto | i comandi che devono passare prima di chiudere una fase |
-| `docs_paths` | dal progetto | la documentazione che la fase di chiusura rilegge |
-| `max_parallel` | `3` | quanti agenti lavorano insieme sotto lo stesso agente che assegna: figlie di un'ondata, fasi di un gruppo; `1` spegne il parallelismo |
-| `figma_file` | vuoto | l'id del file Figma da allineare prima del codice; vuoto = nessuna fase Figma |
+| `default_branch` | from the repo | the branch MR/PRs are merged into |
+| `branch_prefix` | `issue-` | the work branch is `<prefix><issue number>` |
+| `verify_commands` | from the project | the commands that must pass before a phase is closed |
+| `docs_paths` | from the project | the documentation the wrap-up phase re-reads |
+| `max_parallel` | `3` | how many agents work together under the same agent that assigns the work: children of a wave, phases of a group; `1` turns parallelism off |
+| `figma_file` | empty | the id of the Figma file to align before the code; empty = no Figma phase |
 
-Quando `verify_commands` e `docs_paths` non sono impostati, `/issue-flow:plan` li ricava in
-ricognizione — script di `package.json`, target del `Makefile`, `pyproject.toml`, job della CI
-— e li **scrive nella issue**, così la fase di verifica ha comandi veri invece di un generico
-«esegui i test». Se il progetto ha un `CLAUDE.md`, di solito li dice già.
+When `verify_commands` and `docs_paths` are not set, `/issue-flow:plan` infers them during
+reconnaissance — `package.json` scripts, `Makefile` targets, `pyproject.toml`, CI jobs — and
+**writes them in the issue**, so the verification phase has real commands instead of a generic
+“run the tests”. If the project has a `CLAUDE.md`, it usually already says them.
 
-## Come si lavora
+## Language
 
-Per sapere da dove ripartire:
+Issues, MR/PRs and `ROADMAP.md` come out in the language you talk to Claude in; commits follow
+the language of the project's log, or yours if there is no history yet. Headings, bold labels
+and status values stay in English (`## Plan`, `**Execution:**`, `**Status:** in progress — phase
+2 of 6`), because the skills read them (`TRACKER.md` §6). Issues written by 1.x with Italian
+markers are still recognized, and the 1.x Italian arguments — `--chiudi`, `--da`, `spunta`,
+`rivedi` — still work.
 
-```
-/issue-flow:roadmap                  →  propone i prossimi passi, ognuno con la sua fonte
-                                        approvata: ROADMAP.md nella radice, oppure
-                                        big-plan ne fa la madre e una figlia per passo
-/issue-flow:roadmap il frontend      →  solo i passi di un'area o di un traguardo
-```
+## How it works
 
-`roadmap` legge i registri di research-flow quando il repo ha `.research-flow.json` — lo stato
-del progetto, i TODO aperti, gli esperimenti proposti, le ipotesi da verificare — ma research-flow
-non è un requisito: senza, si basa su `ROADMAP.md` precedente, `CLAUDE.md`, `README.md`, i
-`docs_paths` e le issue aperte. Ogni passo cita la fonte da cui viene; quello che la
-documentazione non dice e `roadmap` propone di suo è segnato come tale. L'orizzonte si ferma al
-primo bivio che dipende da un esito non ancora noto: oltre, i due rami in una riga.
-
-Per una feature:
+To know where to pick up from:
 
 ```
-/issue-flow:plan aggiungere il filtro per data alla lista        →  apre la issue #12
-/issue-flow:implement 12                                         →  branch issue-12, un commit per fase
-/issue-flow:close 12                                             →  apre la MR/PR
-/issue-flow:close 12 --chiudi                                    →  a merge avvenuto, chiude la issue
+/issue-flow:roadmap                  →  proposes the next steps, each with its source
+                                        approved: ROADMAP.md at the root, or
+                                        big-plan turns it into the parent and one child per step
+/issue-flow:roadmap the frontend     →  only the steps of an area or a milestone
 ```
 
-Per uno sviluppo che non sta in una issue:
+`roadmap` reads the research-flow registers when the repo has `.research-flow.json` — the
+project's state, the open TODOs, the proposed experiments, the hypotheses to verify — but
+research-flow is not a requirement: without it, it relies on a previous `ROADMAP.md`,
+`CLAUDE.md`, `README.md`, the `docs_paths` and the open issues. Every step cites the source it
+comes from; what the documentation does not say and `roadmap` proposes on its own is marked as
+such. The horizon stops at the first decision point that depends on an outcome not yet known:
+beyond it, the two branches in one line.
+
+For a feature:
 
 ```
-/issue-flow:big-plan sistema di notifiche con preferenze utente  →  madre #20, figlie #21, poi #22 ∥ #23
-/issue-flow:implement 20                                         →  prende la prima figlia aperta, #21
-/issue-flow:close 21                                             →  apre la MR/PR di #21
-/issue-flow:close 21 --chiudi                                    →  chiude #21 e la spunta su #20
-/issue-flow:implement 20                                         →  ora tocca a #22, e così via
+/issue-flow:plan add a date filter to the list                   →  opens issue #12
+/issue-flow:implement 12                                         →  branch issue-12, one commit per phase
+/issue-flow:close 12                                             →  opens the MR/PR
+/issue-flow:close 12 --merged                                    →  once merged, closes the issue
 ```
 
-A mano, le figlie si eseguono una alla volta, ognuna con il suo branch e la sua MR/PR, e ognuna
-parte dal branch di destinazione con dentro le precedenti già unite. Oppure tutte in una volta,
-senza aspettare i merge e con le figlie di un'ondata in parallelo:
+For a development that does not fit in one issue:
 
 ```
-/issue-flow:big-implement 20      →  branch issue-20 da main; #21, poi #22 e #23 insieme, ognuna
-                                     nel suo worktree, nascono da issue-20 e ci rientrano da
-                                     sole, una alla volta; poi la MR/PR issue-20 → main
-/issue-flow:close 20 --chiudi     →  dopo che hai unito la MR/PR della madre: chiude #20
+/issue-flow:big-plan notification system with user preferences   →  parent #20, children #21, then #22 ∥ #23
+/issue-flow:implement 20                                         →  takes the first open child, #21
+/issue-flow:close 21                                             →  opens the MR/PR of #21
+/issue-flow:close 21 --merged                                    →  closes #21 and ticks it on #20
+/issue-flow:implement 20                                         →  now it is #22's turn, and so on
 ```
 
-Ogni figlia passa per `close` come sempre — verifica sull'albero finale, documentazione, MR/PR —
-ma verso il branch della madre, e lì il plugin la unisce da solo: è il cantiere del progetto,
-non il prodotto. Al branch di destinazione arriva solo la MR/PR della madre, e quella non la
-unisce mai il plugin: la approvi e la unisci tu. Non serve sapere in anticipo quale
-delle due usare: `/issue-flow:plan` controlla sempre se la richiesta sta in una issue, e quando
-non ci sta si ferma, avvisa con i numeri misurati e una bozza di divisione, e propone come
-proseguire — passare a `big-plan` (che riparte dalla ricognizione già fatta), aprire solo la
-prima issue, restringere il perimetro, o tenere comunque una issue sola.
+By hand, the children run one at a time, each with its own branch and its own MR/PR, and each
+starts from the target branch with the previous ones already merged in. Or all at once, without
+waiting for the merges and with the children of a wave in parallel:
 
-Ognuna riparte da sola dopo un `/clear`: lo stato sta nelle checkbox della issue, non nella
-conversazione. `/issue-flow:implement` senza numero lo deduce dal branch corrente.
+```
+/issue-flow:big-implement 20      →  branch issue-20 from main; #21, then #22 and #23 together, each
+                                     in its own worktree, branch off issue-20 and come back into it
+                                     on their own, one at a time; then the MR/PR issue-20 → main
+/issue-flow:close 20 --merged     →  after you have merged the parent's MR/PR: closes #20
+```
 
-`/issue-flow:implement` e `/issue-flow:big-implement` non hanno bisogno di `/goal`: portano con
-sé un hook `Stop` (`scripts/goal-stop.sh`) che a ogni fine turno rilegge la issue dal tracker e rimanda al
-lavoro finché nel Piano resta una casella aperta o l'ultima fase non è committata. Si ferma
-prima solo per una decisione esplicita — una fase fallita due volte, una scelta che la issue
-non ha preso — e lo dice. Con `big-implement` il goal copre tutte le figlie del progetto e la madre, fino all'ultimo
-merge nel branch della madre. Lo
-stato del goal sta in `.git/issue-flow/`, fuori dai commit.
+Every child goes through `close` as always — verification on the final tree, documentation,
+MR/PR — but towards the parent branch, and there the plugin merges it on its own: it is the
+project's work site, not the product. Only the parent's MR/PR reaches the target branch, and
+that one the plugin never merges: you approve it and you merge it. You do not need to know in
+advance which of the two to use: `/issue-flow:plan` always checks whether the request fits in
+one issue, and when it does not it stops, warns with the measured numbers and a draft split, and
+proposes how to proceed — switch to `big-plan` (which picks up from the reconnaissance already
+done), open only the first issue, narrow the scope, or keep a single issue anyway.
 
-## Le tre regole che il plugin non negozia
+Each of them restarts on its own after a `/clear`: the state lives in the issue's checkboxes,
+not in the conversation. `/issue-flow:implement` without a number infers it from the current
+branch.
 
-**Si spunta mano a mano.** Alla fine di ogni fase, nello stesso commit che la porta — non a
-lavoro finito. Una roadmap che non dice il proprio stato non serve a niente, e una che mente
-è peggio di nessuna roadmap: se una decisione cambia, si riscrive la riga invece di spuntarla.
+`/issue-flow:implement` and `/issue-flow:big-implement` do not need `/goal`: they bring along a
+`Stop` hook (`scripts/goal-stop.sh`) that at the end of every turn re-reads the issue from the
+tracker and sends the session back to work as long as a box is still open in the Plan or the
+last phase is not committed. It stops earlier only on an explicit decision — a phase that failed
+twice, a choice the issue did not make — and says so. With `big-implement` the goal covers all
+the children of the project and the parent, up to the last merge into the parent branch. The
+goal's state lives in `.git/issue-flow/`, outside the commits.
 
-**Il corpo si rilegge dal server prima di riscriverlo.** L'update sostituisce l'intero campo e
-non fa merge: partire da una copia tenuta in conversazione cancella le caselle che qualcuno ha
-spuntato dalla pagina nel frattempo.
+## The three rules the plugin does not negotiate
 
-**La MR/PR si apre e non si merga.** Il merge lo chiede l'utente, sempre — nemmeno con le
-pipeline verdi.
+**Tick as you go.** At the end of each phase, in the same commit that carries it — not when the
+work is done. A roadmap that does not tell its own state is useless, and one that lies is worse
+than no roadmap: if a decision changes, the line gets rewritten instead of ticked.
 
-## GitLab e GitHub
+**The body is re-read from the server before rewriting it.** The update replaces the whole field
+and does not merge: starting from a copy kept in the conversation wipes out the boxes someone
+ticked from the page in the meantime.
 
-`TRACKER.md`, nella cartella del plugin, ha la corrispondenza completa dei comandi e le
-differenze che mordono: il campo del corpo che si chiama `description` di qua e `body` di là,
-il `--limit` di `gh issue list` fermo a 30, `task_completion_status` che esiste solo su GitLab,
-i CRLF nei corpi scritti dalla web di GitHub, `gh pr create` che non ha `--related-issue`.
+**The MR/PR is opened, not merged.** The merge is the user's call, always — not even green
+pipelines change that.
 
-## Licenza
+## GitLab and GitHub
+
+`TRACKER.md`, in the plugin folder, has the full command mapping and the differences that bite:
+the body field called `description` on one side and `body` on the other, the `--limit` of
+`gh issue list` stuck at 30, `task_completion_status` that exists only on GitLab, the CRLFs in
+bodies written from GitHub's web UI, `gh pr create` that has no `--related-issue`.
+
+## License
 
 MIT.

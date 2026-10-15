@@ -1,366 +1,369 @@
 ---
 name: close
-description: "Porta in merge request — pull request su GitHub — il lavoro di una issue già implementata: controlla che la roadmap sia davvero tutta spuntata, rifà la verifica sull'albero finale, pusha il branch e apre la MR/PR con Closes #numero. A merge avvenuto chiude la issue e, se è figlia di un /issue-flow:big-plan, la spunta sulla madre. La figlia di un progetto che ha il branch della madre — quello di /issue-flow:big-implement — va in MR/PR verso quel branch e la unisce da sola; la madre va in MR/PR verso il branch di destinazione, che unisce l'utente. Trigger: /issue-flow:close, «apri la merge request della issue N», «chiudi la issue N»."
-argument-hint: "<numero> [--chiudi]"
+description: "Takes the work of an already implemented issue to a merge request — pull request on GitHub: checks that the roadmap really is all ticked, redoes the verification on the final tree, pushes the branch and opens the MR/PR with Closes #number. Once merged, it closes the issue and, if it is a child of a /issue-flow:big-plan, ticks it on the parent. The child of a project that has the parent branch — the one from /issue-flow:big-implement — goes in an MR/PR to that branch and merges it by itself; the parent goes in an MR/PR to the target branch, which the user merges. Triggers: /issue-flow:close, “open the merge request for issue N”, “close issue N”; in Italian: «apri la merge request della issue N», «chiudi la issue N»."
+argument-hint: "<number> [--merged]"
 ---
 
 # /issue-flow:close
 
-`/issue-flow:implement` lascia un branch con un commit per fase e la roadmap spuntata. Questa
-skill lo porta davanti a chi deve leggerlo: una merge request — una pull request, se il
-tracker è GitHub — con il corpo che dice cosa cambia e come è stato verificato. Qui sotto
-«MR/PR» sta per quella delle due che vale in questo repo; all'utente dici la parola giusta,
-non la barra.
+`/issue-flow:implement` leaves a branch with one commit per phase and the roadmap ticked. This
+skill puts it in front of whoever has to read it: a merge request — a pull request, if the
+tracker is GitHub — with a body that says what changes and how it was verified. Below,
+“MR/PR” stands for whichever of the two applies in this repo; to the user you say the right
+word, not the slash.
 
-**Verso il branch di destinazione la MR/PR si apre e non si merga.** Il merge lo chiede
-l'utente, sempre: verso `${user_config.default_branch}` questa skill non esegue `glab mr merge`
-né `gh pr merge` in nessun caso, nemmeno se le pipeline sono verdi.
+**Towards the target branch the MR/PR is opened and not merged.** The merge is requested by
+the user, always: towards `${user_config.default_branch}` this skill never runs `glab mr merge`
+or `gh pr merge`, in any case, not even if the pipelines are green.
 
-L'unica eccezione è la figlia di un progetto che ha il **branch della madre** — quello che
-apre `/issue-flow:big-implement`: la sua MR/PR punta al branch della madre, che è il cantiere
-del progetto e non il prodotto, e questa skill la unisce da sola dopo gli stessi controlli di
-sempre. Il lavoro arriva al branch di destinazione solo con la MR/PR della madre, e quella la
-unisce l'utente.
+The only exception is the child of a project that has the **parent branch** — the one opened
+by `/issue-flow:big-implement`: its MR/PR targets the parent branch, which is the project's
+work site and not the product, and this skill merges it by itself after the same checks as
+always. The work reaches the target branch only with the parent's MR/PR, and that one is
+merged by the user.
 
 ## Usage
 
 ```
-/issue-flow:close <numero>            # apre la MR/PR della issue
-/issue-flow:close <figlia>            # col branch della madre: MR/PR verso quello, unita e chiusa qui
-/issue-flow:close <madre>             # a figlie tutte unite: MR/PR del branch della madre
-/issue-flow:close <numero> --chiudi   # a merge avvenuto: chiude la issue e allinea lo Stato
-/issue-flow:close                     # deduce il numero dal branch corrente
+/issue-flow:close <number>            # opens the issue's MR/PR
+/issue-flow:close <child>             # with the parent branch: MR/PR to it, merged and closed here
+/issue-flow:close <parent>            # with all children merged: MR/PR of the parent branch
+/issue-flow:close <number> --merged   # once merged: closes the issue and aligns the Status
+/issue-flow:close                     # infers the number from the current branch
 ```
 
-## 0. Quale tracker, e risponde
+The Italian argument of 1.x, `--chiudi`, is still accepted and means the same as `--merged`.
 
-GitLab (`glab`) o GitHub (`gh`) secondo `git remote get-url origin`; la corrispondenza dei
-comandi è in `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — il file `TRACKER.md` nella cartella di
-questo plugin — da leggere prima del primo comando.
+## 0. Which tracker, and does it answer
+
+GitLab (`glab`) or GitHub (`gh`) according to `git remote get-url origin`; the command mapping
+is in `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — the `TRACKER.md` file in this plugin's folder — to
+be read before the first command.
 
 ```bash
-glab auth status && glab issue view <numero>          # GitLab
-gh   auth status && gh   issue view <numero>          # GitHub
+glab auth status && glab issue view <number>          # GitLab
+gh   auth status && gh   issue view <number>          # GitHub
 ```
 
-Sul 404, o su «could not determine base repo», vale il rimedio di `TRACKER.md` §2: il remote
-è un alias SSH che il CLI non riconosce. Se non sei autenticato, fermati e chiedi all'utente
-`glab auth login --hostname gitlab.com` o `gh auth login --hostname github.com`: è
-interattivo.
+On a 404, or on “could not determine base repo”, the remedy in `TRACKER.md` §2 applies: the
+remote is an SSH alias the CLI does not recognize. If you are not authenticated, stop and ask
+the user for `glab auth login --hostname gitlab.com` or `gh auth login --hostname github.com`:
+it is interactive.
 
-## 0 bis. Quale caso
+## 0b. Which case
 
-Rileggi la issue dal server e guarda la testa del corpo. Il caso decide la **base** — il branch
-a cui punta la MR/PR — e chi la unisce:
+Re-read the issue from the server and look at the head of the body. The case decides the
+**base** — the branch the MR/PR targets — and who merges it:
 
-| caso | come lo riconosci | base | merge |
+| case | how you recognize it | base | merge |
 |---|---|---|---|
-| **issue** | niente `**Tipo:**` né `**Roadmap:**` | branch di destinazione | l'utente |
-| **figlia** | `**Roadmap:** #<madre>`, e il branch della madre **non** è su `origin` | branch di destinazione | l'utente |
-| **figlia sul branch della madre** | `**Roadmap:** #<madre>`, e il branch della madre è su `origin` | branch della madre | questa skill, al passo 3 bis |
-| **madre** | `**Tipo:** roadmap`, e il branch della madre è su `origin` | branch di destinazione | l'utente |
+| **issue** | no `**Type:**` nor `**Roadmap:**` | target branch | the user |
+| **child** | `**Roadmap:** #<parent>`, and the parent branch is **not** on `origin` | target branch | the user |
+| **child on the parent branch** | `**Roadmap:** #<parent>`, and the parent branch is on `origin` | parent branch | this skill, at step 3b |
+| **parent** | `**Type:** roadmap`, and the parent branch is on `origin` | target branch | the user |
 
-Il branch di destinazione è `${user_config.default_branch}`, o quello che restituisce
-`git symbolic-ref --short refs/remotes/origin/HEAD | sed 's#^origin/##'`. Il branch della madre
-è `${user_config.branch_prefix}<madre>`, e c'è se:
+The target branch is `${user_config.default_branch}`, or whatever
+`git symbolic-ref --short refs/remotes/origin/HEAD | sed 's#^origin/##'` returns. The parent
+branch is `${user_config.branch_prefix}<parent>`, and it exists if:
 
 ```bash
-git ls-remote --exit-code --heads origin <branch-madre>   # exit 0: c'è
+git ls-remote --exit-code --heads origin <parent-branch>   # exit 0: it exists
 ```
 
-Una madre **senza** il suo branch non ha niente da portare in MR/PR: le figlie sono andate una
-per una nel branch di destinazione, e la madre si chiude da sola con il `--chiudi` dell'ultima.
-Dillo e fermati.
+A parent **without** its branch has nothing to take to an MR/PR: the children went one by one
+into the target branch, and the parent closes by itself with the `--merged` of the last one.
+Say so and stop.
 
-Di' all'utente quale caso hai riconosciuto, prima di proseguire.
+Tell the user which case you recognized, before going on.
 
-## 1. Il lavoro è davvero finito?
+## 1. Is the work really finished?
 
-Tre controlli, prima di toccare qualsiasi cosa. Se uno fallisce **ti fermi e lo riporti**:
-una MR/PR aperta su lavoro incompleto costa più di una non aperta.
+Three checks, before touching anything. If one fails **you stop and report it**: an MR/PR
+opened on incomplete work costs more than one not opened.
 
-**La roadmap è tutta spuntata.** Rileggi la issue dal server e conta. Il conteggio nel corpo
-è l'unico che vale su entrambe le piattaforme — `task_completion_status` esiste solo su
+**The roadmap is all ticked.** Re-read the issue from the server and count. The count in the
+body is the only one that holds on both platforms — `task_completion_status` exists only on
 GitLab:
 
 ```bash
 # GitLab
-glab issue view <numero> --output json --jq '.description' > "$SCRATCH/roadmap.md"
+glab issue view <number> --output json --jq '.description' > "$SCRATCH/roadmap.md"
 
 # GitHub
-gh issue view <numero> --json body --jq '.body' > "$SCRATCH/roadmap.md"
+gh issue view <number> --json body --jq '.body' > "$SCRATCH/roadmap.md"
 sed -i 's/\r$//' "$SCRATCH/roadmap.md"
 
-grep -c '^[[:space:]]*- \[[ xX]\]' "$SCRATCH/roadmap.md"   # totale
-grep -c '^[[:space:]]*- \[[xX]\]'  "$SCRATCH/roadmap.md"   # spuntate
-grep -n  '^[[:space:]]*- \[ \]'    "$SCRATCH/roadmap.md"   # quelle che restano
+grep -c '^[[:space:]]*- \[[ xX]\]' "$SCRATCH/roadmap.md"   # total
+grep -c '^[[:space:]]*- \[[xX]\]'  "$SCRATCH/roadmap.md"   # ticked
+grep -n  '^[[:space:]]*- \[ \]'    "$SCRATCH/roadmap.md"   # the ones left
 ```
 
-Per la **madre** le caselle sono quelle della sezione **Issue**, una per figlia, e contano
-come le altre: tutte spuntate vuol dire tutte le figlie unite nel branch della madre. Guarda
-anche che ogni figlia sia chiusa sul tracker; una casella spuntata su una figlia aperta, o il
-contrario, è una madre rimasta indietro da sistemare prima.
+For the **parent** the boxes are those of the **Issues** section, one per child, and they count
+like the others: all ticked means all children merged into the parent branch. Also check that
+every child is closed on the tracker; a ticked box on an open child, or the opposite, is a
+parent left behind, to be fixed first.
 
-Se restano caselle vuote, elencale all'utente e chiedi: o manca lavoro — e allora si torna a
-`/issue-flow:implement <numero>` — oppure sono cadute e la riga va riscritta per dire il vero.
-Non spuntarle tu per far quadrare il conto.
+If empty boxes remain, list them to the user and ask: either work is missing — and then it's
+back to `/issue-flow:implement <number>` — or they were dropped and the line must be rewritten
+to tell the truth. Don't tick them yourself to make the count add up.
 
-**Il branch è quello giusto e non ha roba sospesa.** Il branch di lavoro è
-`${user_config.branch_prefix}<numero>` — per la madre, il branch della madre stesso; la base è
-quella del passo 0 bis.
+**The branch is the right one and has nothing pending.** The working branch is
+`${user_config.branch_prefix}<number>` — for the parent, the parent branch itself; the base is
+the one from step 0b.
 
 ```bash
 git fetch origin
-git branch --show-current             # deve essere il branch della issue
-git status --porcelain                # deve essere vuoto
-git log --oneline origin/<base>..HEAD # i commit delle fasi, uno per fase — per la madre, i
-                                      # merge delle figlie con i loro commit
-git merge-base --is-ancestor origin/<base> HEAD   # exit 0: il branch contiene la base
+git branch --show-current             # must be the issue's branch
+git status --porcelain                # must be empty
+git log --oneline origin/<base>..HEAD # the phases' commits, one per phase — for the parent, the
+                                      # children's merges with their commits
+git merge-base --is-ancestor origin/<base> HEAD   # exit 0: the branch contains the base
 ```
 
-Se il branch non contiene la base — il branch di destinazione è andato avanti mentre il
-progetto era sul branch della madre, o il branch della madre è andato avanti mentre la figlia
-lavorava, per esempio perché una sorella della stessa ondata ci è entrata prima — unisci la
-base nel branch (`git merge origin/<base>`) e rifai i controlli. Se il merge ha conflitti,
-`git merge --abort` e fermati: come risolverli è una decisione, non un refuso — e fra due
-sorelle di un'ondata vuol dire che l'accordo fra loro non reggeva.
+If the branch does not contain the base — the target branch moved ahead while the project was
+on the parent branch, or the parent branch moved ahead while the child was working, for
+example because a sibling of the same wave got in first — merge the base into the branch
+(`git merge origin/<base>`) and redo the checks. If the merge has conflicts,
+`git merge --abort` and stop: how to resolve them is a decision, not a typo — and between two
+siblings of a wave it means the agreement between them did not hold.
 
-Se la working tree è sporca, fermati: quel lavoro non è in nessun commit e non finirebbe
-nella MR/PR.
+If the working tree is dirty, stop: that work is in no commit and would not end up in the
+MR/PR.
 
-**La verifica passa sull'albero finale.** I singoli commit erano verdi uno per uno; qui conta
-il risultato di tutti insieme. Esegui i comandi che la issue elenca nella sua fase di verifica
-— o `${user_config.verify_commands}` — e guarda l'output vero, non il riassunto.
+**Verification passes on the final tree.** The single commits were green one by one; here what
+counts is the result of all of them together. Run the commands the issue lists in its
+verification phase — or `${user_config.verify_commands}` — and look at the real output, not
+the summary.
 
-Per la **madre** la verifica è quella di tutto il progetto: l'unione dei comandi delle fasi
-di verifica delle figlie, o `${user_config.verify_commands}`, eseguiti sull'albero del branch
-della madre — è la prima volta che girano tutti insieme.
+For the **parent** the verification is that of the whole project: the union of the commands of
+the children's verification phases, or `${user_config.verify_commands}`, run on the tree of the
+parent branch — it is the first time they all run together.
 
-Poi la prova a mano su ciò che la issue prometteva si dovesse vedere. Se qualcosa è rosso non
-apri la MR/PR: lo sistemi con un commit sul branch, oppure ti fermi e lo riporti.
+Then the manual check on what the issue promised would be visible. If something is red you
+don't open the MR/PR: you fix it with a commit on the branch, or you stop and report it.
 
-## 2. La documentazione
+## 2. The documentation
 
-Prima della MR/PR, non dopo: la documentazione deve descrivere il comportamento nuovo, non
-quello vecchio. Rileggi i file che la fase di chiusura della issue nominava — o quelli in
-`${user_config.docs_paths}` — e controllali contro il codice che c'è adesso. Se ne manca uno,
-aggiornalo e committalo prima di proseguire.
+Before the MR/PR, not after: the documentation must describe the new behavior, not the old
+one. Re-read the files the issue's wrap-up phase named — or those in
+`${user_config.docs_paths}` — and check them against the code as it is now. If one is missing,
+update it and commit it before going on.
 
-## 3. Apri la MR/PR
+## 3. Open the MR/PR
 
 ```bash
 git push -u origin <branch>
 
 # GitLab
 glab mr create \
-  --related-issue <numero> \
+  --related-issue <number> \
   --source-branch <branch> \
   --target-branch <base> \
-  --title "<lo stesso titolo della issue>" \
+  --title "<the same title as the issue>" \
   --description-file "$SCRATCH/mr.md" \
   --remove-source-branch \
   --yes
 
-# GitHub — niente `--related-issue` né `--remove-source-branch`: il collegamento lo fa il
-# `Closes #<numero>` in testa al corpo, e il branch si cancella dopo il merge
+# GitHub — no `--related-issue` nor `--remove-source-branch`: the link is made by the
+# `Closes #<number>` at the top of the body, and the branch is deleted after the merge
 gh pr create \
   --head <branch> \
   --base <base> \
-  --title "<lo stesso titolo della issue>" \
+  --title "<the same title as the issue>" \
   --body-file "$SCRATCH/mr.md"
 ```
 
-Il numero della MR/PR è quello che il comando stampa nell'URL: leggilo da lì. Su GitHub non
-sarà quello della issue — issue e pull request condividono la stessa sequenza di numeri.
+The MR/PR number is the one the command prints in the URL: read it from there. On GitHub it
+won't be the issue's — issues and pull requests share the same number sequence.
 
-Per la **figlia sul branch della madre**, `<base>` è il branch della madre: su entrambe le
-piattaforme il `Closes #<numero>` agisce solo sul branch di default, quindi la figlia la chiudi
-tu al passo 3 bis. Il corpo è lo stesso, con una riga sotto il `Closes`:
-`Parte di #<madre> — si unisce in <branch-madre>.`
+For the **child on the parent branch**, `<base>` is the parent branch: on both platforms
+`Closes #<number>` only acts on the default branch, so you close the child yourself at step 3b.
+The body is the same, with one line under the `Closes`:
+`Part of #<parent> — merges into <parent-branch>.`
 
-Il corpo è corto e sta in piedi da solo — la issue ha il piano, la MR/PR ha l'esito. Chi
-rivede non deve aprire due pagine per capire cosa sta guardando:
-
-```markdown
-Closes #<numero della issue>
-
-## Cosa cambia
-[due o tre righe su cosa succede di diverso per chi usa il prodotto, non l'elenco dei file]
-
-## Come è stata verificata
-[i comandi eseguiti e cosa hanno stampato davvero, con i numeri; la prova a mano e cosa si è
-visto]
-
-## Deviazioni dal piano
-[le righe della roadmap riscritte durante l'implementazione, con il perché. «Nessuna» se non
-ce ne sono.]
-```
-
-Per la **madre** il corpo porta `Closes #<madre>` e, fra «Cosa cambia» e «Come è stata
-verificata», una sezione in più:
+The body is short and stands on its own — the issue has the plan, the MR/PR has the outcome.
+Whoever reviews must not have to open two pages to understand what they're looking at:
 
 ```markdown
-## Figlie
-- #21 <titolo> — !40        # su GitHub: — #40
-- #22 <titolo> — !41
+Closes #<issue number>
+
+## What changes
+[two or three lines on what happens differently for whoever uses the product, not the list of
+files]
+
+## How it was verified
+[the commands run and what they actually printed, with the numbers; the manual check and what
+was seen]
+
+## Deviations from the plan
+[the roadmap lines rewritten during implementation, with the why. “None” if there are none.]
 ```
 
-con le MR/PR con cui ogni figlia è entrata nel branch della madre
-(`glab mr list --target-branch <branch-madre> --merged`, `gh pr list --base <branch-madre>
---state merged`). «Deviazioni dal piano» raccoglie quelle delle figlie.
+For the **parent** the body carries `Closes #<parent>` and, between “What changes” and “How it
+was verified”, one more section:
 
-I numeri qui dentro sono quelli che hai **letto** al passo 1, non quelli che ti aspettavi:
-una MR/PR che dichiara test verdi mai eseguiti è il modo più veloce per far passare un errore.
+```markdown
+## Children
+- #21 <title> — !40        # on GitHub: — #40
+- #22 <title> — !41
+```
 
-Poi porta la riga **Stato:** della issue a `in revisione — !<numero MR>` su GitLab, o
-`in revisione — #<numero PR>` su GitHub, rileggendo sempre il corpo dal server prima di
-riscriverlo, perché l'update sostituisce l'intero campo e non fa merge:
+with the MR/PRs through which each child entered the parent branch
+(`glab mr list --target-branch <parent-branch> --merged`, `gh pr list --base <parent-branch>
+--state merged`). “Deviations from the plan” gathers those of the children.
+
+The numbers in here are the ones you **read** at step 1, not the ones you expected: an MR/PR
+that declares green tests never run is the fastest way to let an error through.
+
+Then bring the issue's **Status:** line to `in review — !<MR number>` on GitLab, or
+`in review — #<PR number>` on GitHub, always re-reading the body from the server before
+rewriting it, because the update replaces the whole field and does not merge:
 
 ```bash
 # GitLab
-glab issue view <numero> --output json --jq '.description' > "$SCRATCH/roadmap.md"
+glab issue view <number> --output json --jq '.description' > "$SCRATCH/roadmap.md"
 # GitHub
-gh issue view <numero> --json body --jq '.body' > "$SCRATCH/roadmap.md" && sed -i 's/\r$//' "$SCRATCH/roadmap.md"
+gh issue view <number> --json body --jq '.body' > "$SCRATCH/roadmap.md" && sed -i 's/\r$//' "$SCRATCH/roadmap.md"
 
-# tocchi solo la riga «**Stato:**»
+# you touch only the “**Status:**” line
 
-glab issue update <numero> --description-file "$SCRATCH/roadmap.md"   # GitLab
-gh   issue edit   <numero> --body-file        "$SCRATCH/roadmap.md"   # GitHub
+glab issue update <number> --description-file "$SCRATCH/roadmap.md"   # GitLab
+gh   issue edit   <number> --body-file        "$SCRATCH/roadmap.md"   # GitHub
 ```
 
-Per la **figlia sul branch della madre** non ti fermi qui: prosegui con il passo 3 bis.
-Negli altri casi la skill finisce con la MR/PR aperta, e prosegue quando l'utente torna con
-`--chiudi`.
+For the **child on the parent branch** you don't stop here: go on with step 3b. In the other
+cases the skill ends with the MR/PR open, and continues when the user comes back with
+`--merged`.
 
-## 3 bis. Il merge nel branch della madre
+## 3b. The merge into the parent branch
 
-Solo per la **figlia sul branch della madre**, subito dopo il passo 3, senza chiedere: i
-controlli che avrebbe fatto chi rivede li hai fatti ai passi 1 e 2.
+Only for the **child on the parent branch**, right after step 3, without asking: the checks
+whoever reviews would have done, you did at steps 1 and 2.
 
-**Le pipeline, se ci sono.** Aspetta che finiscano e guarda l'esito:
+**The pipelines, if there are any.** Wait for them to finish and look at the outcome:
 
 ```bash
-# GitLab — `null` se il progetto non ha pipeline sulla MR
-glab mr view <mr> --output json --jq '.head_pipeline.status'   # ripeti finché non è success/failed
+# GitLab — `null` if the project has no pipelines on the MR
+glab mr view <mr> --output json --jq '.head_pipeline.status'   # repeat until it is success/failed
 
-# GitHub — «no checks reported» vuol dire nessun controllo, ed è verde
+# GitHub — “no checks reported” means no checks, and that is green
 gh pr checks <pr> --watch --fail-fast
 ```
 
-Una pipeline rossa è un «Quando fermarsi davvero», come una verifica rossa al passo 1.
+A red pipeline is a “When to really stop”, like a red verification at step 1.
 
-**Il merge**, legato al commit che hai verificato, così non si unisce niente che non hai visto:
+**The merge**, tied to the commit you verified, so that nothing you haven't seen gets merged:
 
 ```bash
 SHA=$(git rev-parse HEAD)
 
-# GitLab — senza `--auto-merge=false` glab rimanda il merge a fine pipeline, e la figlia
-# successiva nascerebbe da un branch della madre ancora senza questa
+# GitLab — without `--auto-merge=false` glab postpones the merge to the end of the pipeline, and
+# the next child would be born from a parent branch still without this one
 glab mr merge <mr> --sha "$SHA" --auto-merge=false --remove-source-branch --yes
 
-# GitHub — `--merge` tiene i commit delle fasi, con il loro `(#<numero>)`, nella storia del
-# branch della madre
+# GitHub — `--merge` keeps the phases' commits, with their `(#<number>)`, in the history of the
+# parent branch
 gh pr merge <pr> --merge --match-head-commit "$SHA" --delete-branch
 ```
 
-Poi rileggi lo stato: deve essere `merged`/`MERGED` **adesso**. Se il server l'ha messo in coda
-o in auto-merge, o l'ha rifiutato — conflitti, approvazioni obbligatorie, branch protetto —
-fermati e riporta cosa dice.
+Then re-read the state: it must be `merged`/`MERGED` **now**. If the server queued it or put it
+in auto-merge, or refused it — conflicts, mandatory approvals, protected branch — stop and
+report what it says.
 
-**La chiusura**, senza aspettare `--chiudi`: il passo 4 per intero — la issue chiusa, lo
-**Stato:** della figlia a `chiusa — unita in <branch-madre> il GG/MM/AAAA`, il branch di lavoro
-cancellato se il server non l'ha già fatto, e la casella spuntata sulla madre come in «La madre,
-se la issue è una figlia». In locale torni sul branch della madre, aggiornato:
-
-```bash
-git switch <branch-madre> && git pull --ff-only
-```
-
-Se lavori in un **worktree** — quello che `/issue-flow:big-implement` dà a ogni figlia
-(`PARALLEL.md`) — non torni da nessuna parte: il branch della madre è nella cartella principale
-del repo, e lo aggiorna, insieme al worktree che toglie, chi te l'ha dato. Allo stesso modo il
-branch locale della figlia, che il worktree tiene occupato, lo cancella lui. Ti accorgi di
-essere in un worktree perché `git rev-parse --git-dir` e `git rev-parse --git-common-dir` non
-coincidono.
-
-## 4. Dopo il merge — `--chiudi`
-
-Solo quando l'utente dice che la MR/PR è stata unita — o, per la figlia sul branch della madre,
-dal passo 3 bis appena il merge è confermato. Verifichi che sia vero, poi chiudi:
+**The closing**, without waiting for `--merged`: step 4 in full — the issue closed, the child's
+**Status:** at `closed — merged into <parent-branch> on YYYY-MM-DD`, the working branch deleted
+if the server hasn't already done it, and the box ticked on the parent as in “The parent, if the
+issue is a child”. Locally you go back to the parent branch, updated:
 
 ```bash
-# GitLab — lo stato è minuscolo
-glab mr view <numero-o-branch> --output json --jq '.state'    # deve dire "merged"
-glab issue close <numero>
-
-# GitHub — lo stato è maiuscolo, e la issue può essere già chiusa dal `Closes #<numero>`
-gh pr view <numero-o-branch> --json state --jq '.state'       # deve dire "MERGED"
-gh issue view <numero> --json state --jq '.state'             # se è già "CLOSED", non richiuderla
-gh issue close <numero>
+git switch <parent-branch> && git pull --ff-only
 ```
 
-e porti la riga **Stato:** a `chiusa — unita il GG/MM/AAAA`, con la data di oggi — per la
-madre, `chiusa — completata il GG/MM/AAAA`. In locale: `git switch <base> && git pull --ff-only`. Il branch di lavoro si cancella solo se il server
-non l'ha già fatto: su GitLab lo fa `--remove-source-branch`, su GitHub l'opzione
-«Automatically delete head branches» del repo, e se nessuna delle due l'ha tolto,
-`git push origin --delete <branch>`.
+If you work in a **worktree** — the one `/issue-flow:big-implement` gives each child
+(`PARALLEL.md`) — you don't go back anywhere: the parent branch is in the repo's main folder,
+and whoever gave you the worktree updates it, together with the worktree they remove. In the
+same way the child's local branch, which the worktree keeps checked out, is deleted by them. You
+notice you are in a worktree because `git rev-parse --git-dir` and `git rev-parse
+--git-common-dir` don't match.
 
-Se lo stato della MR/PR non è `merged`/`MERGED`, non chiudere niente e dillo.
+## 4. After the merge — `--merged`
 
-### La madre, se la issue è una figlia
+Only when the user says the MR/PR has been merged — or, for the child on the parent branch,
+from step 3b as soon as the merge is confirmed. You verify it is true, then close:
 
-Se in testa al corpo della issue c'è `**Roadmap:** #<madre>`, la figlia appena chiusa va
-spuntata sulla madre: è l'unico posto dove si legge a che punto è il progetto.
+```bash
+# GitLab — the state is lowercase
+glab mr view <number-or-branch> --output json --jq '.state'    # must say "merged"
+glab issue close <number>
+
+# GitHub — the state is uppercase, and the issue may already be closed by the `Closes #<number>`
+gh pr view <number-or-branch> --json state --jq '.state'       # must say "MERGED"
+gh issue view <number> --json state --jq '.state'              # if it is already "CLOSED", don't close it again
+gh issue close <number>
+```
+
+and bring the **Status:** line to `closed — merged on YYYY-MM-DD`, with today's date — for the
+parent, `closed — completed on YYYY-MM-DD`. Locally: `git switch <base> && git pull --ff-only`.
+The working branch is deleted only if the server hasn't already done it: on GitLab
+`--remove-source-branch` does it, on GitHub the repo's “Automatically delete head branches”
+option, and if neither removed it, `git push origin --delete <branch>`.
+
+If the MR/PR state is not `merged`/`MERGED`, close nothing and say so.
+
+### The parent, if the issue is a child
+
+If the head of the issue body has `**Roadmap:** #<parent>`, the child just closed must be
+ticked on the parent: it is the only place where you can read how far the project has got.
 
 ```bash
 # GitLab
-glab issue view <madre> --output json --jq '.description' > "$SCRATCH/madre.md"
+glab issue view <parent> --output json --jq '.description' > "$SCRATCH/parent.md"
 # GitHub
-gh issue view <madre> --json body --jq '.body' > "$SCRATCH/madre.md" && sed -i 's/\r$//' "$SCRATCH/madre.md"
+gh issue view <parent> --json body --jq '.body' > "$SCRATCH/parent.md" && sed -i 's/\r$//' "$SCRATCH/parent.md"
 
-# giri in `- [x]` SOLO la riga `- [ ] #<numero>` della sezione Issue
-# porti la riga «**Stato:**» della madre a `in corso — k di M issue unite`
+# turn into `- [x]` ONLY the `- [ ] #<number>` line of the Issues section
+# bring the parent's “**Status:**” line to `in progress — k of M issues merged`
 
-glab issue update <madre> --description-file "$SCRATCH/madre.md"   # GitLab
-gh   issue edit   <madre> --body-file        "$SCRATCH/madre.md"   # GitHub
+glab issue update <parent> --description-file "$SCRATCH/parent.md"   # GitLab
+gh   issue edit   <parent> --body-file        "$SCRATCH/parent.md"   # GitHub
 ```
 
-Le regole di sempre: rileggi dal server, controlla che il file non sia vuoto, tocca solo quelle
-due righe. La MR/PR della figlia porta `Closes #<figlia>` e **mai** il numero della madre: la
-madre non si chiude al merge di una figlia.
+The usual rules: re-read from the server, check the file is not empty, touch only those two
+lines. The child's MR/PR carries `Closes #<child>` and **never** the parent's number: the
+parent does not close when a child is merged.
 
-Per la **figlia sul branch della madre** lo **Stato:** della madre diventa
-`in corso — k di M issue unite in <branch-madre>`, e la madre **non si chiude** nemmeno quando
-l'ultima casella è spuntata: il lavoro è nel branch della madre, non ancora nel branch di
-destinazione. Nella consegna nomina la figlia successiva — o, se erano tutte, il passo dopo:
-`/issue-flow:close <madre>`, che apre la MR/PR della madre.
+For the **child on the parent branch** the parent's **Status:** becomes
+`in progress — k of M issues merged into <parent-branch>`, and the parent **does not close**
+even when the last box is ticked: the work is in the parent branch, not yet in the target
+branch. In the hand-off name the next child — or, if that was all of them, the next step:
+`/issue-flow:close <parent>`, which opens the parent's MR/PR.
 
-Per la **figlia** unita direttamente nel branch di destinazione, se dopo la spunta tutte le
-caselle della sezione Issue sono `- [x]`, il progetto è finito: porta lo **Stato:** della madre
-a `chiusa — completata il GG/MM/AAAA` e chiudila (`glab issue close <madre>`,
-`gh issue close <madre>`). Altrimenti, nella consegna, nomina la figlia successiva: la prima
-`- [ ] #<n>` rimasta, da cominciare con `/issue-flow:implement <n>` — o
-`/issue-flow:implement <madre>`, che la trova da solo.
+For the **child** merged directly into the target branch, if after the tick all the boxes of the
+Issues section are `- [x]`, the project is finished: bring the parent's **Status:** to
+`closed — completed on YYYY-MM-DD` and close it (`glab issue close <parent>`,
+`gh issue close <parent>`). Otherwise, in the hand-off, name the next child: the first
+`- [ ] #<n>` left, to be started with `/issue-flow:implement <n>` — or
+`/issue-flow:implement <parent>`, which finds it by itself.
 
-### La madre
+### The parent
 
-`--chiudi` sulla **madre**, a MR/PR della madre unita: il passo 4 così com'è, con il branch
-della madre come branch di lavoro. Le figlie sono già chiuse e spuntate; resta da chiudere la
-madre, se il `Closes #<madre>` non l'ha già fatto, e da cancellare il branch della madre.
+`--merged` on the **parent**, with the parent's MR/PR merged: step 4 as it is, with the parent
+branch as the working branch. The children are already closed and ticked; what's left is to
+close the parent, if `Closes #<parent>` hasn't already done it, and to delete the parent
+branch.
 
-## 5. Consegna
+## 5. Hand-off
 
-Il link della MR/PR, cosa hai verificato con i numeri veri, i file di documentazione che hai
-dovuto aggiornare, e quello che hai trovato non a posto e hai sistemato per poterla aprire.
-Dopo un `--chiudi` su una figlia — o un merge al passo 3 bis — a che punto è la madre
-(`k di M issue unite`) e quale figlia viene dopo. Se
-ti sei fermato, la ragione in una riga e cosa serve per sbloccare.
+The MR/PR link, what you verified with the real numbers, the documentation files you had to
+update, and what you found out of place and fixed to be able to open it. After a `--merged` on
+a child — or a merge at step 3b — how far the parent has got (`k of M issues merged`) and which
+child comes next. If you stopped, the reason in one line and what is needed to unblock.
 
-## Quando fermarsi davvero
+## When to really stop
 
-Fermati e chiedi, invece di aprire la MR/PR, se: restano checkbox non spuntate; la working
-tree è sporca; una verifica è rossa e la causa non è un refuso evidente; il branch è dietro
-la base in modo che unirla porta conflitti da decidere; la issue è già chiusa o ha già una
-MR/PR aperta — tranne, per la figlia sul branch della madre, una MR/PR aperta da un giro
-interrotto, che si riprende dal passo 3 bis; una pipeline è rossa, o il server non unisce la
-MR/PR della figlia nel branch della madre.
+Stop and ask, instead of opening the MR/PR, if: unticked checkboxes remain; the working tree is
+dirty; a verification is red and the cause is not an obvious typo; the branch is behind the
+base in a way that merging it brings conflicts to decide; the issue is already closed or
+already has an open MR/PR — except, for the child on the parent branch, an MR/PR opened by an
+interrupted round, which resumes from step 3b; a pipeline is red, or the server does not merge
+the child's MR/PR into the parent branch.

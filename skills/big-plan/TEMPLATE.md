@@ -1,118 +1,120 @@
-# TEMPLATE — il corpo della issue madre
+# TEMPLATE — the body of the parent issue
 
-La madre non si implementa: tiene la roadmap del progetto e l'elenco delle figlie che la
-eseguono. Il piano con le fasi e le checkbox di lavoro sta nelle figlie, che seguono
+The parent is not implemented: it holds the project roadmap and the list of the children that
+execute it. The plan with the phases and the work checkboxes lives in the children, which follow
 `skills/plan/TEMPLATE.md`.
 
-Il titolo sta fuori dal corpo: una frase breve in minuscolo che dice cosa ottiene il prodotto a
-progetto finito.
+The title stays outside the body: a short lowercase sentence that says what the product gains
+once the project is finished.
 
-Le sezioni sono queste, in quest'ordine, tutte obbligatorie tranne dove detto. Il testo fra
-parentesi quadre è istruzione per chi scrive e non va copiato. Dove il template dà due
-varianti — GitLab e GitHub — ne copi una sola, quella del repo, e usi la sua parola (merge
-request o pull request) senza barre.
+The sections are these, in this order, all mandatory except where stated. The text in square
+brackets is an instruction for the writer and must not be copied. Where the template gives two
+variants — GitLab and GitHub — you copy only one, the repo's, and use its word (merge request or
+pull request) without slashes. The headings, bold labels and status values below are markers:
+copy them in English verbatim; write the rest in the user's language — `TRACKER.md` §6.
 
 ---
 
-- **Tipo:** roadmap
-- **Stato:** da fare
+- **Type:** roadmap
+- **Status:** to do
 
-## Obiettivo
+## Goal
 
-[Due o tre paragrafi. Cosa succede oggi e perché non basta, con il riferimento al codice che
-produce quel comportamento; cosa sarà vero quando l'ultima figlia sarà unita. È la frase che
-ogni figlia deve poter ricondurre a sé.]
+[Two or three paragraphs. What happens today and why it is not enough, with the reference to the
+code that produces that behavior; what will be true when the last child is merged. It is the
+sentence every child must be able to trace back to itself.]
 
-## Architettura
+## Architecture
 
-[Come si incastrano i pezzi a progetto finito: i moduli toccati, i confini fra loro, i dati che
-passano. Un diagramma ASCII se aiuta. Nomina i file d'ingresso con `percorso/file.ts:42`
-verificati, e i file che nasceranno con il nome che avranno.]
+[How the pieces fit together once the project is finished: the modules touched, the boundaries
+between them, the data that flows. An ASCII diagram if it helps. Name the entry files with
+verified `path/file.ts:42`, and the files that will be born with the name they will have.]
 
-## Decisioni
+## Decisions
 
-[Una voce per decisione presa — con l'utente o da solo — con la sua motivazione. Sono le scelte
-che le figlie non devono rimettere in discussione: il writer di ogni figlia le riceve e le
-rispetta.]
+[One entry per decision taken — with the user or on your own — with its rationale. They are the
+choices the children must not call back into question: the writer of each child receives them
+and respects them.]
 
-## Contesto
+## Context
 
-[I fatti scoperti in ricognizione che valgono per più figlie, un paragrafo con un **titolo in
-grassetto** ciascuno, come nel template di `plan`: i numeri misurati con detto dove, i vincoli
-trasversali — schema dei dati, campi speculari, cache, compatibilità con dati e client già in
-giro — con il perché.]
+[The facts discovered in reconnaissance that hold for several children, one paragraph with a
+**bold title** each, as in the `plan` template: the measured numbers stating where, the
+cross-cutting constraints — data schema, mirrored fields, caches, compatibility with data and
+clients already out there — with the why.]
 
-## Issue
+## Issues
 
-[Le figlie in ordine di esecuzione, divise per ondata: le figlie di un'ondata si eseguono
-insieme, un'ondata comincia quando la precedente è tutta unita. Alla creazione della madre al
-posto del numero c'è il segnaposto `#(k)`; diventa `#<numero>` quando le figlie sono aperte.
-Un'ondata di una figlia sola è normale: una catena lineare è sempre corretta.]
+[The children in execution order, split by wave: the children of a wave run together, a wave
+starts when the previous one is fully merged. When the parent is created, the placeholder `#(k)`
+stands in place of the number; it becomes `#<number>` when the children are opened. A wave with
+a single child is normal: a linear chain is always correct.]
 
-**Ondata 1**
+**Wave 1**
 
-- [ ] #13 [titolo] — [cosa consegna, in una riga]
+- [ ] #13 [title] — [what it delivers, in one line]
 
-**Ondata 2** — in parallelo
+**Wave 2** — in parallel
 
-- [ ] #14 [titolo] — [cosa consegna] · dipende da #13
-- [ ] #15 [titolo] — [cosa consegna] · dipende da #13
+- [ ] #14 [title] — [what it delivers] · depends on #13
+- [ ] #15 [title] — [what it delivers] · depends on #13
 
-**Ondata 3**
+**Wave 3**
 
-- [ ] #16 [titolo] — [cosa consegna] · dipende da #14, #15
+- [ ] #16 [title] — [what it delivers] · depends on #14, #15
 
-## Parallelismo
+## Parallelism
 
-[Una sottosezione per ogni ondata con più di una figlia; se non ce ne sono, una riga: «Nessuna
-ondata parallela: le figlie si eseguono una alla volta.» È l'accordo fra le figlie che lavorano
-insieme, deciso da chi ha scritto la roadmap: chi le scrive e chi le esegue lo rispetta senza
-rinegoziarlo. Le condizioni sono quelle di `PARALLEL.md` §2 nel repo del plugin.]
+[One subsection for each wave with more than one child; if there are none, one line: “No
+parallel wave: the children run one at a time.” It is the agreement among the children that work
+together, decided by whoever wrote the roadmap: whoever writes them and whoever executes them
+respects it without renegotiating it. The conditions are those of `PARALLEL.md` §2 in the
+plugin's repo.]
 
-### Ondata 2 — #14 ∥ #15
+### Wave 2 — #14 ∥ #15
 
-- **#14 tocca:** [moduli, cartelle o file — o sezioni di file condivisi — che può modificare o
-  creare, e nient'altro]
-- **#15 tocca:** [idem; disgiunto da #14]
-- **Non tocca nessuna delle due:** [i file calamita — lockfile, migrazioni, registri, indici,
-  changelog — con chi li tocca dopo; oppure il loro unico proprietario nell'ondata]
-- **Contratto:** [quello che condividono, con nomi e forme esatti: il tipo nato con #13 che
-  entrambe usano così com'è, l'endpoint che #14 espone e #15 chiama, con il formato della
-  risposta. Nessuna delle due lo cambia.]
+- **#14 touches:** [modules, folders or files — or sections of shared files — that it can modify
+  or create, and nothing else]
+- **#15 touches:** [same; disjoint from #14]
+- **Touched by neither:** [the magnet files — lockfiles, migrations, registries, indexes,
+  changelog — with who touches them afterwards; or their single owner in the wave]
+- **Contract:** [what they share, with exact names and shapes: the type born with #13 that both
+  use as it is, the endpoint #14 exposes and #15 calls, with the format of the response. Neither
+  of the two changes it.]
 
-## Come si avanza
+## How to proceed
 
-[Sezione obbligatoria, si copia com'è.]
+[Mandatory section, copied as it is — in the user's language, like the rest.]
 
-A mano, le figlie si eseguono **una alla volta, nell'ordine qui sopra** — dentro un'ondata in
-qualunque ordine —, ognuna con il suo branch e la sua merge request — pull request su GitHub:
+By hand, the children run **one at a time, in the order above** — within a wave in any order —,
+each with its own branch and its own merge request — pull request on GitHub:
 
 ```
-/issue-flow:implement <figlia>        # o il numero di questa issue: prende la prima figlia aperta
-/issue-flow:close <figlia>            # apre la merge request della figlia
-/issue-flow:close <figlia> --chiudi   # a merge avvenuto: chiude la figlia e la spunta qui
+/issue-flow:implement <child>         # or this issue's number: takes the first open child
+/issue-flow:close <child>             # opens the child's merge request
+/issue-flow:close <child> --merged    # once merged: closes the child and ticks it here
 ```
 
-Oppure tutte in una volta, senza aspettare i merge, con `/issue-flow:big-implement <questa
-issue>`: questa issue ha il suo branch, ogni figlia nasce da lì — quelle di un'ondata insieme,
-ognuna nel suo worktree — e ci rientra con una merge request unita in automatico, una alla
-volta, dopo i controlli di `/issue-flow:close`; alla fine la merge request
-di questa issue porta tutto il progetto nel branch di destinazione, e la unisce solo chi la
-approva. A merge avvenuto, `/issue-flow:close <questa issue> --chiudi`.
+Or all at once, without waiting for the merges, with `/issue-flow:big-implement <this issue>`:
+this issue has its own branch, each child is born from there — those of a wave together, each in
+its own worktree — and goes back into it with a merge request merged automatically, one at a
+time, after the checks of `/issue-flow:close`; at the end the merge request of this issue brings
+the whole project into the target branch, and only whoever approves it merges it. Once it is
+merged, `/issue-flow:close <this issue> --merged`.
 
-Una casella di questa issue si spunta **quando la figlia è unita** — nel branch di
-destinazione, o nel branch di questa issue — non quando è implementata. La figlia successiva
-parte da lì, con dentro il lavoro delle precedenti.
+A box of this issue is ticked **when the child is merged** — into the target branch, or into
+this issue's branch — not when it is implemented. The next child starts from there, with the
+work of the previous ones in it.
 
-Quando l'ultimo lavoro arriva nel branch di destinazione — con l'ultima figlia, o con la merge
-request di questa issue — questa issue si chiude, e lo **Stato:** diventa
-`chiusa — completata il GG/MM/AAAA`. Fino ad allora è `in corso — k di M issue unite`.
+When the last piece of work reaches the target branch — with the last child, or with the merge
+request of this issue — this issue gets closed, and the **Status:** becomes
+`closed — completed on YYYY-MM-DD`. Until then it is `in progress — k of M issues merged`.
 
-Se durante l'esecuzione la roadmap smette di reggere — una decisione si rivela sbagliata, una
-figlia va divisa o rifatta — si correggono le issue prima del codice: questa, rileggendola dal
-server prima di riscriverla, e le figlie toccate con `/issue-flow:plan rivedi <numero>`.
+If during execution the roadmap stops holding — a decision turns out to be wrong, a child must
+be split or redone — the issues are fixed before the code: this one, re-reading it from the
+server before rewriting it, and the affected children with `/issue-flow:plan revise <number>`.
 
-## Fuori perimetro
+## Out of scope
 
-[Elenco puntato di quello che il progetto **non** fa, con il perché: le estensioni naturali che
-qualcuno potrebbe aggiungere di sua iniziativa in una delle figlie.]
+[Bulleted list of what the project does **not** do, with the why: the natural extensions that
+someone might add on their own initiative in one of the children.]

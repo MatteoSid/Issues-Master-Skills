@@ -1,7 +1,7 @@
 ---
 name: big-implement
-description: "Porta avanti in una sola esecuzione tutte le issue figlie di una issue madre di /issue-flow:big-plan — GitLab o GitHub — sul branch della madre: un'ondata alla volta, nell'ordine della madre, con le figlie di un'ondata in parallelo, ognuna nel suo worktree di git e affidata a un subagent issue-runner che fa il giro di /issue-flow:implement (un agente checkbox per fase, anche più d'uno insieme, checkbox spuntate, un commit per fase) e quello di /issue-flow:close, che verifica, apre la merge request — pull request su GitHub — verso il branch della madre e la unisce da solo, una figlia alla volta. Alla fine apre la MR/PR della madre verso il branch di destinazione, che unisce solo l'utente. Trigger: /issue-flow:big-implement, «implementa tutto il progetto N», «porta avanti tutta la roadmap N», «esegui tutte le figlie di N»."
-argument-hint: "<madre>"
+description: "Carries all the child issues of an /issue-flow:big-plan parent issue through in a single run — GitLab or GitHub — on the parent branch: one wave at a time, in the parent's order, with the children of a wave in parallel, each in its own git worktree and handed to an issue-runner subagent that does the round of /issue-flow:implement (one checkbox agent per phase, several at once too, checkboxes ticked, one commit per phase) and that of /issue-flow:close, which verifies, opens the merge request — pull request on GitHub — toward the parent branch and merges it on its own, one child at a time. At the end it opens the parent's MR/PR toward the target branch, which only the user merges. Triggers: /issue-flow:big-implement, “implement the whole project N”, “carry out the whole roadmap N”, “run all the children of N”; in Italian: «implementa tutto il progetto N», «porta avanti tutta la roadmap N», «esegui tutte le figlie di N»."
+argument-hint: "<parent>"
 hooks:
   Stop:
     - hooks:
@@ -11,405 +11,408 @@ hooks:
 
 # /issue-flow:big-implement
 
-`/issue-flow:implement <madre>` esegue **una** figlia e si ferma: la successiva parte solo
-dopo il merge della precedente, che fa l'utente. Questa skill porta avanti **tutto il
-progetto** in una volta, senza aspettare nessuno fino alla fine, e con le figlie di una stessa
-ondata **in parallelo**:
+`/issue-flow:implement <parent>` executes **one** child and stops: the next one starts only
+after the previous one is merged, which the user does. This skill carries **the whole
+project** through in one go, without waiting for anyone until the end, and with the children of
+the same wave **in parallel**:
 
 ```
-main ──────────────────────────────────────────────── ◀── MR/PR issue-20 (la unisce l'utente)
+main ──────────────────────────────────────────────── ◀── MR/PR issue-20 (the user merges it)
   └─ issue-20 ──●──────────●────●──────────●──────
                 ▲          ▲    ▲          ▲
             issue-21   issue-22 issue-23  issue-24
-            ondata 1   └── ondata 2 ──┘   ondata 3
-                       (insieme, ognuna nel suo worktree;
-                        rientrano una alla volta)
+            wave 1     └── wave 2 ────┘   wave 3
+                       (together, each in its own worktree;
+                        they come back one at a time)
 ```
 
-- la madre ha il suo branch, `${user_config.branch_prefix}<madre>`, nato dal branch di
-  destinazione, e la cartella del repo resta su quel branch dall'inizio alla fine;
-- ogni figlia lavora nel **suo worktree**, su un branch nato dal branch della madre aggiornato.
-  Le figlie di un'ondata partono insieme dallo stesso commit; un'ondata parte quando la
-  precedente è tutta unita;
-- ogni figlia passa per `close`: verifica sull'albero finale, documentazione, MR/PR **verso il
-  branch della madre** — che qui `close` **unisce da solo**, perché il branch della madre non è
-  il prodotto: è il cantiere del progetto, e la revisione vera arriva alla fine. Le figlie di
-  un'ondata si implementano insieme ma **si integrano una alla volta**: ognuna, prima del suo
-  merge, si unisce con quello che le sorelle hanno già portato nel branch della madre e rifà
-  la verifica lì sopra;
-- quando l'ultima figlia è unita, la MR/PR della madre verso il branch di destinazione si apre
-  come sempre e **non si unisce**: quella l'approva e la unisce l'utente.
+- the parent has its own branch, `${user_config.branch_prefix}<parent>`, created from the target
+  branch, and the repo folder stays on that branch from start to finish;
+- each child works in **its own worktree**, on a branch created from the updated parent branch.
+  The children of a wave start together from the same commit; a wave starts when the previous
+  one is fully merged;
+- each child goes through `close`: verification on the final tree, documentation, MR/PR
+  **toward the parent branch** — which here `close` **merges on its own**, because the parent
+  branch is not the product: it is the project's work site, and the real review comes at the
+  end. The children of a wave are implemented together but **integrated one at a time**: each
+  one, before its merge, merges in what its siblings have already brought into the parent branch
+  and redoes the verification on top of it;
+- when the last child is merged, the parent's MR/PR toward the target branch is opened as usual
+  and **is not merged**: the user approves and merges that one.
 
-Le regole di esecuzione sono quelle di `implement` e `close` e non si ripetono qui:
-`${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md` per le fasi, la verifica, le spunte, i commit
-e la modalità goal; `${CLAUDE_PLUGIN_ROOT}/skills/close/SKILL.md` per la verifica finale, la
-documentazione, la MR/PR, il merge nel branch della madre e la chiusura;
-`${CLAUDE_PLUGIN_ROOT}/TRACKER.md` per i comandi delle due piattaforme;
-`${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` per i ruoli, l'accordo fra lavori paralleli e i worktree.
-**Leggili tutti e quattro prima del primo comando.** Qui sotto c'è solo quello che cambia.
+The execution rules are those of `implement` and `close` and are not repeated here:
+`${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md` for the phases, the verification, the ticks,
+the commits and goal mode; `${CLAUDE_PLUGIN_ROOT}/skills/close/SKILL.md` for the final
+verification, the documentation, the MR/PR, the merge into the parent branch and the closing;
+`${CLAUDE_PLUGIN_ROOT}/TRACKER.md` for the commands of the two platforms;
+`${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` for the roles, the agreement between parallel work and the
+worktrees. **Read all four before the first command.** Below is only what changes.
 
 ## Usage
 
 ```
-/issue-flow:big-implement <madre>   # esegue, un'ondata alla volta, tutte le figlie non ancora unite
+/issue-flow:big-implement <parent>   # runs, one wave at a time, all the children not yet merged
 ```
 
-## Tu sei l'agente di roadmap, di tutto il progetto
+## You are the roadmap agent, for the whole project
 
-Non implementi le figlie e non ne orchestri le fasi: ogni figlia la affidi a un agente di Issue
-— un subagent `issue-flow:issue-runner` —, che fa per lei il giro di `implement` e di `close`
-fino al merge nel branch della madre, e a sua volta affida ogni fase a un agente checkbox — un
-subagent `issue-flow:issue-phase`:
-
-```
-tu (big-implement, agente di roadmap)   il progetto: ondate, accordi, worktree, branch della madre, goal, MR/PR della madre
- └─ issue-runner, uno per figlia        la figlia: fasi, accordi fra le fasi, verifiche, spunte, commit, close, merge
-     └─ issue-phase, uno per fase       la fase: le sue checkbox
-```
-
-Il motivo è il contesto, come in `implement` ma un livello più su: le fasi di tutte le figlie
-nel tuo contesto lo riempirebbero a metà progetto. Tu tieni la visione del progetto — quale
-ondata è in corso, quali figlie, con quali MR/PR, quante sono già nel branch della madre, cosa
-hanno cambiato in corsa — e controlli l'esito di ogni figlia sul tracker e su git, non sul
-racconto del runner.
-
-La catena usa tutta la profondità che Claude Code concede: sotto la sessione principale i
-subagent possono lanciarne altri per due livelli, e il terzo non ha più il tool `Agent`. Per
-questo `issue-phase` non delega, e il runner non deve mai essere lanciato da un altro subagent.
-
-**Insieme solo le figlie della stessa ondata**, e solo dopo l'accordo del passo 4.1. Figlie di
-ondate diverse mai: la prima figlia dell'ondata N+1 nasce dal branch della madre **dopo** che
-tutta l'ondata N ci è stata unita, e parte dal codice che quella ha lasciato.
-
-## 0. Quale tracker, e risponde
-
-Identico al passo 0 di `implement`.
-
-## 1. Leggi la madre e ricava le ondate
-
-Leggi la madre dal server come al passo 1 di `implement`. Se in testa al corpo non c'è
-`**Tipo:** roadmap`, non è una madre: dillo e proponi `/issue-flow:implement <numero>`.
-
-Dalla sezione **Issue**, nell'ordine, prendi le righe `- [ ] #<n>` con la loro **Ondata**: sono
-le figlie da portare avanti. Una madre scritta prima che le ondate esistessero non le ha: ogni
-figlia è un'ondata da sola. Quelle `- [x]` sono già unite — nel branch della madre o, da un giro
-fatto a mano, nel branch di destinazione — e non si toccano. Per ogni figlia da fare guarda sul
-tracker:
-
-- **lo stato**: se è già chiusa ma la casella è vuota, la madre è rimasta indietro —
-  segnalalo, non rieseguirla, e trattala come unita;
-- **le dipendenze** — `· dipende da #<k>` nella madre, `**Dipende da:**` nella figlia: ognuna
-  deve essere unita (casella spuntata o issue chiusa) **oppure** una figlia che questa
-  esecuzione porta avanti in un'ondata **prima** della sua. Una dipendenza fuori da entrambi i
-  casi — una issue esterna aperta, una sorella della stessa ondata o di una dopo — è una roadmap
-  che non regge: fermati e dillo;
-- **se è già iniziata** da un giro precedente: il branch `${user_config.branch_prefix}<n>`
-  esiste, ha un worktree (`git worktree list`), ha checkbox spuntate, ha già una MR/PR
-  (`glab mr list --source-branch <branch>`, `gh pr list --head <branch>`). Riprendi da dove è
-  rimasta invece di ripartire: dalla prima fase non spuntata, dall'integrazione se le fasi sono
-  tutte fatte, dal merge se la MR/PR è aperta.
-
-Guarda anche la **madre**: se ha già una MR/PR aperta verso il branch di destinazione
-(`glab mr list --source-branch <branch-madre>`, `gh pr list --head <branch-madre>`), il
-progetto è già consegnato — dillo e non ripartire.
-
-Poi presenta all'utente le ondate e parti senza chiedere conferma:
+You don't implement the children and you don't orchestrate their phases: you hand each child to
+an Issue agent — an `issue-flow:issue-runner` subagent —, which does for it the round of
+`implement` and of `close` up to the merge into the parent branch, and in turn hands each phase
+to a checkbox agent — an `issue-flow:issue-phase` subagent:
 
 ```
-issue-20  branch della madre, nasce da main
-ondata 1   #21  issue-21  worktree, nasce da issue-20   MR/PR → issue-20, unita da close
-ondata 2   #22  issue-22  worktree, nasce da issue-20   ┐ insieme
-           #23  issue-23  worktree, nasce da issue-20   ┘ unite una alla volta: #22, poi #23
-ondata 3   #24  issue-24  worktree, nasce da issue-20   MR/PR → issue-20, unita da close
-issue-20  MR/PR → main, la unisce l'utente
+you (big-implement, roadmap agent)   the project: waves, agreements, worktrees, parent branch, goal, parent's MR/PR
+ └─ issue-runner, one per child      the child: phases, agreements between phases, verifications, ticks, commits, close, merge
+     └─ issue-phase, one per phase   the phase: its checkboxes
 ```
 
-Se non c'è nessuna figlia da fare ma la madre non ha ancora la sua MR/PR, salta al passo 5.
+The reason is context, as in `implement` but one level up: the phases of all the children in
+your context would fill it halfway through the project. You keep the view of the project — which
+wave is under way, which children, with which MR/PRs, how many are already in the parent branch,
+what they changed along the way — and you check the outcome of each child on the tracker and on
+git, not on the runner's story.
 
-## 2. Il branch della madre
+The chain uses all the depth Claude Code allows: below the main session, subagents can launch
+others for two levels, and the third no longer has the `Agent` tool. That is why `issue-phase`
+does not delegate, and the runner must never be launched by another subagent.
 
-Il branch della madre è `${user_config.branch_prefix}<madre>` — con il default `issue-`, la
-madre #20 ha `issue-20`. Nasce dal branch di destinazione aggiornato, e va **subito sul
-remote**: le MR/PR delle figlie ci puntano, e `close` riconosce il flusso di big-implement
-proprio dalla sua esistenza su `origin`.
+**Together only the children of the same wave**, and only after the agreement of step 4.1.
+Children of different waves never: the first child of wave N+1 is created from the parent branch
+**after** all of wave N has been merged into it, and starts from the code that wave left.
+
+## 0. Which tracker, and does it answer
+
+Identical to step 0 of `implement`.
+
+## 1. Read the parent and work out the waves
+
+Read the parent from the server as in step 1 of `implement`. If the head of the body does not
+have `**Type:** roadmap`, it is not a parent: say so and propose `/issue-flow:implement <number>`.
+
+From the **Issues** section, in order, take the `- [ ] #<n>` lines with their **Wave**: they are
+the children to carry through. A parent written before waves existed has none: each child is a
+wave of its own. The `- [x]` ones are already merged — into the parent branch or, from a round
+done by hand, into the target branch — and are not touched. For each child to do, look on the
+tracker at:
+
+- **its state**: if it is already closed but the box is empty, the parent has fallen behind —
+  report it, don't re-run it, and treat it as merged;
+- **its dependencies** — `· depends on #<k>` in the parent, `**Depends on:**` in the child:
+  each must be merged (box ticked or issue closed) **or** a child that this run carries through
+  in a wave **before** its own. A dependency outside both cases — an open external issue, a
+  sibling of the same wave or of a later one — is a roadmap that doesn't hold: stop and say so;
+- **whether it has already started** in a previous round: the branch
+  `${user_config.branch_prefix}<n>` exists, has a worktree (`git worktree list`), has ticked
+  checkboxes, already has an MR/PR (`glab mr list --source-branch <branch>`,
+  `gh pr list --head <branch>`). Resume from where it was left instead of starting over: from
+  the first unticked phase, from the integration if the phases are all done, from the merge if
+  the MR/PR is open.
+
+Look at the **parent** too: if it already has an MR/PR open toward the target branch
+(`glab mr list --source-branch <parent-branch>`, `gh pr list --head <parent-branch>`), the
+project has already been delivered — say so and don't start again.
+
+Then present the waves to the user and start without asking for confirmation:
+
+```
+issue-20  parent branch, created from main
+wave 1   #21  issue-21  worktree, created from issue-20   MR/PR → issue-20, merged by close
+wave 2   #22  issue-22  worktree, created from issue-20   ┐ together
+         #23  issue-23  worktree, created from issue-20   ┘ merged one at a time: #22, then #23
+wave 3   #24  issue-24  worktree, created from issue-20   MR/PR → issue-20, merged by close
+issue-20  MR/PR → main, the user merges it
+```
+
+If there is no child left to do but the parent doesn't have its MR/PR yet, jump to step 5.
+
+## 2. The parent branch
+
+The parent branch is `${user_config.branch_prefix}<parent>` — with the default `issue-`, parent
+#20 has `issue-20`. It is created from the updated target branch, and goes **straight to the
+remote**: the children's MR/PRs point to it, and `close` recognizes the big-implement flow
+precisely from its existence on `origin`.
 
 ```bash
-git status --porcelain                 # deve essere vuoto
+git status --porcelain                 # must be empty
 git fetch origin
-git switch <branch-madre> 2>/dev/null \
-  || git switch -c <branch-madre> --track origin/<branch-madre> 2>/dev/null \
-  || { git switch <destinazione> && git pull --ff-only && git switch -c <branch-madre>; }
-git push -u origin <branch-madre>
+git switch <parent-branch> 2>/dev/null \
+  || git switch -c <parent-branch> --track origin/<parent-branch> 2>/dev/null \
+  || { git switch <target> && git pull --ff-only && git switch -c <parent-branch>; }
+git push -u origin <parent-branch>
 ```
 
-Se il branch esisteva già da un giro precedente, allinealo a `origin` con `git pull --ff-only`.
-Se il branch di destinazione è andato avanti nel frattempo, **non** lo rincorri: il branch della
-madre si riallinea una volta sola, al passo 5 — in `close` sulla madre —, dove un conflitto è
-una decisione dell'utente.
+If the branch already existed from a previous round, align it with `origin` with
+`git pull --ff-only`. If the target branch has moved on in the meantime, you **don't** chase it:
+the parent branch is realigned only once, at step 5 — in `close` on the parent —, where a
+conflict is the user's decision.
 
-Da qui alla fine **la cartella del repo resta sul branch della madre**, e pulita: le figlie
-lavorano nei loro worktree, e qui arrivano solo i loro merge, con un `git pull --ff-only`.
+From here to the end **the repo folder stays on the parent branch**, and clean: the children
+work in their worktrees, and only their merges arrive here, with a `git pull --ff-only`.
 
-Porta la riga **Stato:** della madre a `in corso — k di M issue unite in <branch-madre>`.
+Bring the parent's **Status:** line to `in progress — k of M issues merged into <parent-branch>`.
 
-## 3. Il goal copre tutto il progetto
+## 3. The goal covers the whole project
 
-La modalità goal è quella di `implement`, con una differenza: `$GOAL_DIR/goal` contiene **tutte**
-le figlie da portare avanti e **la madre**, un numero per riga. L'hook `Stop` rilegge ognuna dal
-tracker e non lascia chiudere il turno finché una qualsiasi ha una `- [ ]`: nel Piano per le
-figlie, nella sezione **Issue** per la madre — che si spunta solo quando una figlia è unita nel
-suo branch. Così il goal regge fino all'ultimo merge, non solo fino all'ultima fase.
+Goal mode is that of `implement`, with one difference: `$GOAL_DIR/goal` contains **all** the
+children to carry through and **the parent**, one number per line. The `Stop` hook re-reads
+each one from the tracker and doesn't let the turn end while any of them has a `- [ ]`: in the
+Plan for the children, in the **Issues** section for the parent — which is ticked only when a
+child is merged into its branch. This way the goal holds up to the last merge, not just up to
+the last phase.
 
 ```bash
 GOAL_DIR=$(git rev-parse --path-format=absolute --git-path issue-flow)
-mkdir -p "$GOAL_DIR" && printf '%s\n' 21 22 23 24 20 > "$GOAL_DIR/goal" && rm -rf "$GOAL_DIR/in-volo"
+mkdir -p "$GOAL_DIR" && printf '%s\n' 21 22 23 24 20 > "$GOAL_DIR/goal" && rm -rf "$GOAL_DIR/in-flight"
 ```
 
-Lo scrivi dopo il passo 2, prima della prima figlia. `in-volo/` funziona come in `implement`
-(`PARALLEL.md` §5), con un segnaposto per **runner** al lavoro: lo crei subito prima di
-delegare la figlia — `touch "$GOAL_DIR/in-volo/figlia-<n>"` — e lo togli appena quel runner
-torna, anche se altri sono ancora al lavoro. I runner non toccano `.git/issue-flow/` fuori da
-`wt/`: il goal e `in-volo/` sono solo tuoi.
+You write it after step 2, before the first child. `in-flight/` works as in `implement`
+(`PARALLEL.md` §5), with one sentinel per **runner** at work: you create it right before
+delegating the child — `touch "$GOAL_DIR/in-flight/child-<n>"` — and remove it as soon as that
+runner returns, even if others are still at work. The runners don't touch `.git/issue-flow/`
+outside `wt/`: the goal and `in-flight/` are yours alone.
 
-Quando l'ultima figlia è unita l'hook ti lascia fermare anche se la MR/PR della madre non è
-ancora aperta. Non fermarti lì: la consegna arriva dopo il passo 5.
+When the last child is merged the hook lets you stop even if the parent's MR/PR is not open
+yet. Don't stop there: the hand-off comes after step 5.
 
-Per fermarti prima della fine **cancelli tu `$GOAL_DIR/goal`** e dici all'utente perché.
+To stop before the end **you delete `$GOAL_DIR/goal` yourself** and tell the user why.
 
-## 4. Il giro, un'ondata alla volta
+## 4. The round, one wave at a time
 
-Per ogni ondata, in ordine: l'accordo e i worktree (4.1), le figlie delegate ai runner tutte
-insieme (4.2), il giro di ogni figlia fatto dal suo runner (4.3), l'integrazione una figlia alla
-volta (4.4), il controllo di ognuna (4.5). Poi l'ondata successiva.
+For each wave, in order: the agreement and the worktrees (4.1), the children delegated to the
+runners all together (4.2), each child's round done by its runner (4.3), the integration one
+child at a time (4.4), the check of each one (4.5). Then the next wave.
 
-Un'ondata di una figlia sola fa lo stesso giro, più corto: niente accordo da confermare, e il
-runner fa `close` di seguito, senza aspettare il via dell'integrazione.
+A wave with a single child does the same round, shorter: no agreement to confirm, and the runner
+runs `close` straight after, without waiting for the go-ahead to integrate.
 
-### 4.1 L'accordo e i worktree
+### 4.1 The agreement and the worktrees
 
-Le figlie di un'ondata le ha messe insieme chi ha scritto la roadmap, ma **l'accordo lo confermi
-tu**, sul branch della madre com'è adesso, prima di assegnarle: le ondate prima hanno cambiato il
-codice, e chi le ha implementate può aver deviato. Rileggi la sezione **Parallelismo** della
-madre e i Piani delle figlie dell'ondata, e controlla:
+The children of a wave were put together by whoever wrote the roadmap, but **you confirm the
+agreement**, on the parent branch as it is now, before assigning them: the earlier waves have
+changed the code, and those who implemented them may have deviated. Re-read the parent's
+**Parallelism** section and the Plans of the wave's children, and check:
 
-- che i perimetri siano ancora disgiunti: nessun file, o sezione di file, che compare nel Piano
-  di due figlie dell'ondata — compresi i file calamita di `PARALLEL.md` §2;
-- che il **Contratto** regga sul branch della madre: i tipi, le interfacce, i file su cui si
-  appoggia esistono, con il nome e la forma che dice — le deviazioni riportate dai runner delle
-  ondate prima sono il primo posto dove guardare;
-- che nessuna figlia dell'ondata dipenda da un'altra della stessa ondata.
+- that the scopes are still disjoint: no file, or section of a file, that appears in the Plan
+  of two children of the wave — the magnet files of `PARALLEL.md` §2 included;
+- that the **Contract** holds on the parent branch: the types, interfaces and files it relies
+  on exist, with the name and shape it states — the deviations reported by the runners of
+  earlier waves are the first place to look;
+- that no child of the wave depends on another of the same wave.
 
-Se qualcosa non regge, l'ondata **si esegue in sequenza**, nell'ordine della madre, una figlia
-alla volta: è sempre corretto, e lo dici nella consegna. Se reggeva solo con un contratto più
-preciso — un nome che la madre lasciava implicito —, fissalo tu, mettilo nel prompt di **tutti**
-i runner dell'ondata e riscrivi la sezione **Parallelismo** della madre rileggendola dal
-server. Non spostare lavoro fra le figlie: quello è un `/issue-flow:plan rivedi`.
+If something doesn't hold, the wave **runs in sequence**, in the parent's order, one child at a
+time: it is always correct, and you say so in the hand-off. If it held only with a more precise
+contract — a name the parent left implicit —, fix it yourself, put it in the prompt of **all**
+the runners of the wave and rewrite the parent's **Parallelism** section, re-reading it from the
+server. Don't move work between children: that is a `/issue-flow:plan revise`.
 
-Poi, per ogni figlia dell'ondata, il suo worktree, dal branch della madre aggiornato
+Then, for each child of the wave, its worktree, from the updated parent branch
 (`PARALLEL.md` §4):
 
 ```bash
-git pull --ff-only                                         # sei sul branch della madre
+git pull --ff-only                                           # you are on the parent branch
 WT=$(git rev-parse --path-format=absolute --git-common-dir)/issue-flow/wt
-git worktree add "$WT/<branch>" -b <branch> <branch-madre>  # o, se il branch c'è già:
-git worktree add "$WT/<branch>" <branch>                    #   lo riprende dov'era
-( cd "$WT/<branch>" && <comando di preparazione> )
+git worktree add "$WT/<branch>" -b <branch> <parent-branch>  # or, if the branch already exists:
+git worktree add "$WT/<branch>" <branch>                     #   it picks it up where it was
+( cd "$WT/<branch>" && <setup command> )
 ```
 
-Il comando di preparazione è quello che la figlia scrive nel suo **Contesto**, o quello del
-progetto.
+The setup command is the one the child writes in its **Context**, or the project's.
 
-### 4.2 Delega le figlie, tutte insieme
+### 4.2 Delegate the children, all together
 
-Un'invocazione del tool `Agent` con `subagent_type: "issue-flow:issue-runner"` per ogni figlia
-dell'ondata — al massimo `${user_config.max_parallel}` insieme, vuoto vale 3; le altre a
-scaglioni —, **tutte in un solo messaggio**. Il runner non ha visto la conversazione: **quello
-che non gli scrivi non esiste**. Nel prompt:
+One invocation of the `Agent` tool with `subagent_type: "issue-flow:issue-runner"` for each
+child of the wave — at most `${user_config.max_parallel}` together, empty means 3; the others in
+batches —, **all in a single message**. The runner has not seen the conversation: **what you
+don't write to it doesn't exist**. In the prompt:
 
-- il numero e il titolo della figlia, il numero della madre, il branch della madre e il branch
-  di destinazione;
-- il **percorso assoluto del suo worktree**, e che lavora solo lì: la cartella del repo è tua;
-- i percorsi assoluti delle istruzioni che deve leggere:
-  `${CLAUDE_PLUGIN_ROOT}/skills/big-implement/SKILL.md` — per il passo 4.3, il suo giro —,
+- the number and title of the child, the parent's number, the parent branch and the target
+  branch;
+- the **absolute path of its worktree**, and that it works only there: the repo folder is yours;
+- the absolute paths of the instructions it must read:
+  `${CLAUDE_PLUGIN_ROOT}/skills/big-implement/SKILL.md` — for step 4.3, its round —,
   `${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md`, `${CLAUDE_PLUGIN_ROOT}/skills/close/SKILL.md`,
-  `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` e `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md`;
-- i valori della configurazione: `${user_config.branch_prefix}`, `${user_config.default_branch}`,
+  `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` and `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md`;
+- the configuration values: `${user_config.branch_prefix}`, `${user_config.default_branch}`,
   `${user_config.verify_commands}`, `${user_config.docs_paths}`, `${user_config.figma_file}`,
-  `${user_config.max_parallel}` — vuoti compresi, detti come vuoti;
-- se l'ondata ha più figlie: il **suo perimetro**, quelli delle sorelle e il **Contratto**,
-  integrali dalla sezione **Parallelismo** della madre, con quello che hai fissato al passo 4.1;
-  e che si ferma a «pronta per l'integrazione» e aspetta il tuo via prima di `close`;
-- da dove riprendere, se il passo 1 ha trovato la figlia già iniziata: la prima fase non
-  spuntata, l'integrazione, la MR/PR già aperta, il merge;
-- cosa hanno lasciato le figlie delle ondate prima, se hanno deviato dalla loro issue — il
-  writer della figlia le conosceva solo come piano. È il campo «deviazioni» dei report dei
-  runner precedenti.
+  `${user_config.max_parallel}` — empty ones included, stated as empty;
+- the language to write the MR/PR and what goes into the issues in — the user's,
+  `TRACKER.md` §6: the runner does not know it;
+- if the wave has several children: **its scope**, those of its siblings and the **Contract**,
+  verbatim from the parent's **Parallelism** section, with what you fixed at step 4.1; and that
+  it stops at “ready for integration” and waits for your go-ahead before `close`;
+- where to resume from, if step 1 found the child already started: the first unticked phase,
+  the integration, the MR/PR already open, the merge;
+- what the children of the earlier waves left behind, if they deviated from their issue — the
+  child's writer knew them only as a plan. It is the “deviations” field of the previous
+  runners' reports.
 
-Ogni runner ha il suo segnaposto in `$GOAL_DIR/in-volo/`, creato subito prima dell'invocazione e
-tolto appena torna, prima del controllo.
+Each runner has its sentinel in `$GOAL_DIR/in-flight/`, created right before the invocation and
+removed as soon as it returns, before the check.
 
-Regole non negoziabili: **un runner nuovo per ogni figlia**, mai riusarne uno con `SendMessage`
-per un'altra figlia; mai insieme figlie di ondate diverse. Mentre i runner lavorano non tocchi i
-loro worktree né le loro issue; la cartella del repo resta sul branch della madre, pulita.
+Non-negotiable rules: **a new runner for each child**, never reuse one with `SendMessage` for
+another child; never children of different waves together. While the runners work you don't
+touch their worktrees or their issues; the repo folder stays on the parent branch, clean.
 
-### 4.3 Il giro della figlia
+### 4.3 The child's round
 
-Questo lo fa il runner, e sta qui perché è il suo riferimento. Tre passi, tutti nel worktree
-che il prompt gli dà.
+The runner does this, and it is here because it is its reference. Three steps, all in the
+worktree the prompt gives it.
 
-#### Il branch, dalla madre
+#### The branch, from the parent
 
-Il worktree è già sul branch della figlia, nato dal branch della madre aggiornato. Il controllo
-del passo **1 ter** di `implement` si fa contro il branch della madre: le dipendenze sono chiuse
-e il loro lavoro è lì (`git log --oneline <branch-madre> | grep '#<k>'`), e i punti d'aggancio
-«nasce con #<k>» esistono lì. Se non reggono, ti fermi come dice `implement`.
+The worktree is already on the child's branch, created from the updated parent branch. The
+check of step **1c** of `implement` is done against the parent branch: the dependencies are
+closed and their work is there (`git log --oneline <parent-branch> | grep '#<k>'`), and the
+“created by #<k>” hook points exist there. If they don't hold, you stop as `implement` says.
 
-#### Le fasi
+#### The phases
 
-Il passo 3 di `implement`, con due varianti: niente `in-volo/` né `goal`, che sono di
-`big-implement`; e la cartella del repo, per te, è il tuo worktree — i worktree delle fasi
-parallele li crei con `git -C <tuo worktree> worktree add …`, nello stesso `$WT`, e li
-integri nel tuo worktree. Un subagent `issue-flow:issue-phase` **nuovo** per ogni fase con il
-contesto integrale della figlia, le fasi di un gruppo insieme dopo il tuo accordo, verifica
-eseguita da te, spunta sulla issue rileggendola dal server, un commit per fase con
-`(#<figlia>)` nel messaggio. A fine fasi, la riga **Stato:** della figlia come al passo 4 di
-`implement`.
+Step 3 of `implement`, with two variants: no `in-flight/` or `goal`, which belong to
+`big-implement`; and the repo folder, for you, is your worktree — you create the worktrees of
+the parallel phases with `git -C <your worktree> worktree add …`, in the same `$WT`, and you
+integrate them into your worktree. A **new** `issue-flow:issue-phase` subagent for each phase
+with the full context of the child, the phases of a group together after your agreement,
+verification run by you, the tick on the issue re-reading it from the server, one commit per
+phase with `(#<child>)` in the message. When the phases are done, the child's **Status:** line
+as in step 4 of `implement`.
 
-Le fasi della figlia stanno nel **perimetro della figlia**: se una fase ti chiede un file fuori,
-non lo concedi tu — ti fermi e lo scrivi nel report, perché quel file è di una sorella.
+The child's phases stay within the **child's scope**: if a phase asks you for a file outside
+it, you don't grant it — you stop and write it in the report, because that file belongs to a
+sibling.
 
-Nel prompt di ogni fase va anche cosa hanno lasciato le figlie già unite, se hanno deviato
-dalla loro issue.
+The prompt of each phase also carries what the already merged children left behind, if they
+deviated from their issue.
 
-Se l'ondata ha più figlie, a fasi finite **ti fermi**: report con «pronta per l'integrazione».
-Il resto lo fai quando `big-implement` ti dà il via, al passo 4.4.
+If the wave has several children, when the phases are done **you stop**: report with “ready for
+integration”. You do the rest when `big-implement` gives you the go-ahead, at step 4.4.
 
-#### Close, fino al merge nel branch della madre
+#### Close, up to the merge into the parent branch
 
-Tutto `close` sulla figlia, nel suo ramo «figlia con il branch della madre», nel tuo worktree:
-i controlli del passo 1 — che portano nel branch della figlia quello che le sorelle hanno già
-unito nel branch della madre (`git merge origin/<branch-madre>`) e rifanno la verifica
-sull'albero unito —, la documentazione del passo 2, la MR/PR del passo 3 **verso il branch della
-madre**, poi il merge e la chiusura del passo 3 bis, che non aspettano l'utente. Alla fine:
+All of `close` on the child, in its “child on the parent branch” case, in your worktree: the
+checks of step 1 — which bring into the child's branch what the siblings have already merged
+into the parent branch (`git merge origin/<parent-branch>`) and redo the verification on the
+merged tree —, the documentation of step 2, the MR/PR of step 3 **toward the parent branch**,
+then the merge and the closing of step 3b, which don't wait for the user. At the end:
 
-- la MR/PR della figlia è unita nel branch della madre;
-- la figlia è chiusa, con **Stato:** `chiusa — unita in <branch-madre> il GG/MM/AAAA`;
-- la sua casella sulla madre è spuntata, e lo **Stato:** della madre dice `k di M`;
-- il worktree resta dov'è, con il branch della figlia: lo toglie `big-implement`.
+- the child's MR/PR is merged into the parent branch;
+- the child is closed, with **Status:** `closed — merged into <parent-branch> on YYYY-MM-DD`;
+- its box on the parent is ticked, and the parent's **Status:** says `k of M`;
+- the worktree stays where it is, with the child's branch: `big-implement` removes it.
 
-Un conflitto nel merge con il branch della madre vuol dire che il lavoro di due sorelle non era
-compatibile: `git merge --abort`, ti fermi e lo scrivi nel report con i file in conflitto. Non
-lo risolvi tu: l'accordo l'ha fatto chi sta sopra, e tocca a lui.
+A conflict in the merge with the parent branch means the work of two siblings was not
+compatible: `git merge --abort`, you stop and write it in the report with the conflicting
+files. You don't resolve it: the agreement was made by whoever is above, and it is up to them.
 
-Se `close` si ferma — una casella vuota, una verifica rossa, una pipeline fallita, una MR/PR che
-il server non unisce — il runner si ferma e lo scrive nel report.
+If `close` stops — an empty box, a red verification, a failed pipeline, an MR/PR the server
+doesn't merge — the runner stops and writes it in the report.
 
-### 4.4 L'integrazione, una figlia alla volta
+### 4.4 The integration, one child at a time
 
-Le figlie di un'ondata rientrano nel branch della madre **una alla volta, nell'ordine della
-madre**, perché ognuna deve fare la verifica sull'albero con dentro le sorelle già unite. Quando
-tutti i runner dell'ondata sono tornati «pronta per l'integrazione», per ogni figlia in ordine:
+The children of a wave come back into the parent branch **one at a time, in the parent's
+order**, because each must run the verification on the tree with the already merged siblings in
+it. When all the runners of the wave have come back “ready for integration”, for each child in
+order:
 
-1. dai il via al **suo** runner con `SendMessage` — «integra: fai `close` secondo il passo 4.3»
-   —, così riprende con il contesto della figlia; se non risponde più, un runner nuovo con lo
-   stesso prompt del 4.2, il report del primo e l'indicazione di ripartire da `close`. Il suo
-   segnaposto in `in-volo/` torna finché lavora;
-2. al ritorno, il controllo del passo 4.5;
-3. aggiorni la cartella del repo e togli il worktree:
+1. give **its** runner the go-ahead with `SendMessage` — “integrate: run `close` as in step
+   4.3” —, so it resumes with the child's context; if it no longer answers, a new runner with
+   the same prompt as 4.2, the first one's report and the instruction to restart from `close`.
+   Its sentinel in `in-flight/` comes back for as long as it works;
+2. on its return, the check of step 4.5;
+3. update the repo folder and remove the worktree:
 
 ```bash
-git pull --ff-only                                   # il branch della madre, con dentro la figlia
+git pull --ff-only                                   # the parent branch, with the child in it
 git worktree remove "$WT/<branch>"
-git branch -D <branch> 2>/dev/null                   # unito, e già cancellato sul server
+git branch -D <branch> 2>/dev/null                   # merged, and already deleted on the server
 ```
 
-Poi la figlia successiva dell'ondata. Mai due integrazioni insieme: la seconda si verificherebbe
-su un branch della madre senza la prima.
+Then the next child of the wave. Never two integrations together: the second would be verified
+on a parent branch without the first.
 
-Se un runner si è fermato prima dell'integrazione, o una figlia non si integra, l'ondata si
-ferma lì: le figlie già unite restano unite, le altre restano nei loro worktree con i loro
-commit — vedi «Quando fermarsi davvero».
+If a runner stopped before the integration, or a child doesn't integrate, the wave stops there:
+the children already merged stay merged, the others stay in their worktrees with their commits
+— see “When to really stop”.
 
-### 4.5 Controlla come è finita
+### 4.5 Check how it ended
 
-Il report del runner è un racconto, non una prova. Prima di passare alla figlia successiva
-controlli tu, sul server e su git:
+The runner's report is a story, not a proof. Before moving on to the next child you check
+yourself, on the server and on git:
 
 ```bash
-# la MR/PR della figlia è unita nel branch della madre
-glab mr list --source-branch <branch> --target-branch <branch-madre> --merged   # GitLab
-gh   pr list --head <branch> --base <branch-madre> --state merged               # GitHub
+# the child's MR/PR is merged into the parent branch
+glab mr list --source-branch <branch> --target-branch <parent-branch> --merged   # GitLab
+gh   pr list --head <branch> --base <parent-branch> --state merged               # GitHub
 
-# la figlia è chiusa, con tutte le caselle del Piano spuntate
-glab issue view <figlia> --output json --jq '.state'    # "closed"
-gh   issue view <figlia> --json state --jq '.state'     # "CLOSED"
+# the child is closed, with all the boxes of the Plan ticked
+glab issue view <child> --output json --jq '.state'    # "closed"
+gh   issue view <child> --json state --jq '.state'     # "CLOSED"
 
-# la sua casella è spuntata sulla madre: rileggi la madre dal server
+# its box is ticked on the parent: re-read the parent from the server
 
-# la cartella del repo è sul branch della madre, pulita, e dopo il pull ha i commit della figlia
+# the repo folder is on the parent branch, clean, and after the pull it has the child's commits
 git branch --show-current && git status --porcelain
-git fetch origin && git status -sb | head -1              # niente «behind»
-git log --oneline <branch-madre> | grep '(#<figlia>)'
+git fetch origin && git status -sb | head -1              # no “behind”
+git log --oneline <parent-branch> | grep '(#<child>)'
 ```
 
-Se il runner si è fermato, o uno di questi controlli non torna, il progetto si ferma: vedi
-«Quando fermarsi davvero». Un runner che dice «unita» quando il server dice altro non si
-riprova: la figlia va guardata.
+If the runner stopped, or one of these checks doesn't add up, the project stops: see “When to
+really stop”. A runner that says “merged” when the server says otherwise is not retried: the
+child needs looking at.
 
-Tieni le deviazioni del report: vanno nel prompt dei runner dell'ondata successiva, nel tuo
-accordo del passo 4.1 e nella consegna.
+Keep the report's deviations: they go into the prompt of the next wave's runners, into your
+agreement at step 4.1 and into the hand-off.
 
-Quando tutta l'ondata è unita, passa all'ondata successiva.
+When the whole wave is merged, move on to the next wave.
 
-## 5. La MR/PR della madre
+## 5. The parent's MR/PR
 
-Quando tutte le caselle della sezione **Issue** della madre sono spuntate, `close` sulla madre,
-nel suo ramo «madre»: rifà la verifica sull'albero finale del branch della madre, allinea la
-documentazione, pusha e apre la MR/PR `branch della madre → branch di destinazione` con
-`Closes #<madre>`. **Mai il merge**: questa l'approva e la unisce l'utente, come ogni MR/PR
-verso il branch di destinazione.
+When all the boxes of the parent's **Issues** section are ticked, `close` on the parent, in its
+“parent” case: it redoes the verification on the final tree of the parent branch, aligns the
+documentation, pushes and opens the MR/PR `parent branch → target branch` with
+`Closes #<parent>`. **Never the merge**: the user approves and merges this one, like every MR/PR
+toward the target branch.
 
-Prima, `git worktree list`: non deve restare nessun worktree in `$WT` di questo progetto.
+Before that, `git worktree list`: no worktree of this project must be left in `$WT`.
 
-## 6. Consegna
+## 6. Hand-off
 
-Il link della MR/PR della madre, in cima: è l'unica cosa che l'utente deve fare. Poi una
-tabella, nell'ordine in cui le figlie sono entrate nel branch della madre:
+The link to the parent's MR/PR, at the top: it is the only thing the user has to do. Then a
+table, in the order in which the children entered the parent branch:
 
 ```
-ondata  figlia  MR/PR  fasi  unita in
-1       #21     !40    6/6   issue-20
-2       #22     !41    7/7   issue-20   in parallelo con #23
-2       #23     !42    5/5   issue-20   in parallelo con #22
-3       #24     !43    6/6   issue-20
+wave  child  MR/PR  phases  merged into
+1     #21    !40    6/6     issue-20
+2     #22    !41    7/7     issue-20   in parallel with #23
+2     #23    !42    5/5     issue-20   in parallel with #22
+3     #24    !43    6/6     issue-20
 ```
 
-Poi le ondate e i gruppi di fasi che hai eseguito in sequenza invece che in parallelo, con il
-motivo; le checkbox rimaste vuote con il motivo, le deviazioni scritte nelle roadmap, i problemi
-che i subagent hanno visto fuori dal loro perimetro. E come si prosegue: a merge avvenuto della
-MR/PR della madre, `/issue-flow:close <madre> --chiudi`, che chiude la madre e cancella il suo
-branch.
+Then the waves and phase groups you ran in sequence instead of in parallel, with the reason;
+the checkboxes left empty with the reason, the deviations written in the roadmaps, the problems
+the subagents saw outside their scope. And how to continue: once the parent's MR/PR is merged,
+`/issue-flow:close <parent> --merged`, which closes the parent and deletes its branch.
 
-Non incollare le issue né il diff.
+Don't paste the issues or the diff.
 
-## Quando fermarsi davvero
+## When to really stop
 
-Tutti i casi di «Quando fermarsi davvero» di `implement` e di `close` — che per una figlia li
-incontra il runner, e te li riporta —, più due:
+All the “When to really stop” cases of `implement` and of `close` — which for a child the
+runner runs into, and reports to you —, plus two:
 
-- **se una figlia si ferma, il progetto si ferma con lei.** L'ondata successiva nascerebbe da un
-  branch della madre senza il suo lavoro, quindi non si salta avanti. Le sorelle della stessa
-  ondata che lavorano ancora le lasci finire — sono nei loro worktree, non danno fastidio a
-  nessuno — e integri quelle che arrivano pronte, ma non apri l'ondata dopo;
-- **se due figlie di un'ondata non si integrano** — un conflitto nel merge con il branch della
-  madre, o la verifica rossa sull'albero unito mentre ognuna era verde da sola —, l'accordo non
-  reggeva. Non lo risolve nessun runner: dillo all'utente con le figlie, i file e la parte del
-  contratto in causa, e proponi di correggere le issue — la sezione **Parallelismo** della madre,
-  `/issue-flow:plan rivedi <figlia>` — prima del codice.
+- **if a child stops, the project stops with it.** The next wave would be created from a parent
+  branch without its work, so you don't skip ahead. The siblings of the same wave that are still
+  working you let finish — they are in their worktrees, they bother no one — and you integrate
+  those that arrive ready, but you don't open the next wave;
+- **if two children of a wave don't integrate** — a conflict in the merge with the parent
+  branch, or the verification red on the merged tree while each was green on its own —, the
+  agreement didn't hold. No runner resolves it: tell the user with the children, the files and
+  the part of the contract involved, and propose correcting the issues — the parent's
+  **Parallelism** section, `/issue-flow:plan revise <child>` — before the code.
 
-Nella consegna di' quale figlia si è fermata, a che punto — fase, integrazione, MR/PR, merge —,
-perché, quali worktree restano (`git worktree list`) e che si riprende con
-`/issue-flow:big-implement <madre>` una volta sistemata: il passo 1 ritrova le figlie già unite
-e i worktree rimasti, e riparte da lì.
+In the hand-off say which child stopped, at what point — phase, integration, MR/PR, merge —,
+why, which worktrees remain (`git worktree list`) and that it resumes with
+`/issue-flow:big-implement <parent>` once fixed: step 1 finds again the children already merged
+and the leftover worktrees, and restarts from there.
 
-Prima di fermarti, `rm -f "$GOAL_DIR/goal"`: altrimenti l'hook ti rimanda al lavoro.
+Before stopping, `rm -f "$GOAL_DIR/goal"`: otherwise the hook sends you back to work.

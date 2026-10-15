@@ -1,8 +1,8 @@
 {
   "name": "issue-flow",
   "displayName": "Issue Flow",
-  "version": "1.7.0",
-  "description": "Dalla richiesta alla merge request passando per una issue che contiene il piano e la roadmap che lo esegue; per gli sviluppi grossi, una roadmap di progetto divisa in issue eseguite a ondate, con il lavoro che si può parallelizzare affidato a più agenti, ognuno nel suo worktree git; e, prima di tutto, la proposta dei prossimi passi letta dalla documentazione del progetto. Funziona su GitLab (glab) e GitHub (gh).",
+  "version": "2.0.0",
+  "description": "From request to merge request through an issue that holds the plan and the roadmap that executes it; for large developments, a project roadmap split into issues run in waves, with the work that can be parallelized handed to several agents, each in its own git worktree; and, before all that, the next steps proposed from the project's documentation. Works on GitLab (glab) and GitHub (gh).",
   "author": {
     "name": "Matteo Donato"
   },
@@ -20,38 +20,38 @@
   "userConfig": {
     "default_branch": {
       "type": "string",
-      "title": "Branch di destinazione",
-      "description": "Il branch in cui vengono unite le MR/PR. Lascia vuoto per ricavarlo dal repo con git symbolic-ref.",
+      "title": "Target branch",
+      "description": "The branch MR/PRs are merged into. Leave empty to infer it from the repo with git symbolic-ref.",
       "default": ""
     },
     "branch_prefix": {
       "type": "string",
-      "title": "Prefisso dei branch di lavoro",
-      "description": "Il branch di una issue si chiama <prefisso><numero della issue>.",
+      "title": "Work branch prefix",
+      "description": "An issue's branch is named <prefix><issue number>.",
       "default": "issue-"
     },
     "verify_commands": {
       "type": "string",
-      "title": "Comandi di verifica",
-      "description": "I comandi che devono passare prima di chiudere una fase, uno per riga (es. npm test, npm run lint). Vuoto: si ricavano dal progetto.",
+      "title": "Verification commands",
+      "description": "The commands that must pass before a phase is closed, one per line (e.g. npm test, npm run lint). Empty: inferred from the project.",
       "multiple": true
     },
     "docs_paths": {
       "type": "string",
-      "title": "Documentazione da tenere allineata",
-      "description": "I file o le cartelle di documentazione che la fase di chiusura deve rileggere, uno per riga (es. README.md, docs/).",
+      "title": "Documentation to keep aligned",
+      "description": "The documentation files or folders the wrap-up must re-read, one per line (e.g. README.md, docs/).",
       "multiple": true
     },
     "max_parallel": {
       "type": "string",
-      "title": "Agenti in parallelo",
-      "description": "Quanti agenti possono lavorare insieme sotto lo stesso agente che assegna il lavoro: figlie di un'ondata, fasi di un gruppo. Vuoto: 3. 1 spegne il parallelismo.",
+      "title": "Agents in parallel",
+      "description": "How many agents can work together under the same assigning agent: children of a wave, phases of a group. Empty: 3. 1 turns parallelism off.",
       "default": ""
     },
     "figma_file": {
       "type": "string",
-      "title": "File Figma del progetto",
-      "description": "L'id del file Figma da allineare prima del codice. Vuoto: nessuna fase Figma nelle roadmap.",
+      "title": "Project Figma file",
+      "description": "The id of the Figma file to align before the code. Empty: no Figma phase in the roadmaps.",
       "default": ""
     }
   }
