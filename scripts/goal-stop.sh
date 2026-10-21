@@ -9,8 +9,9 @@
 #              ticked when a child is merged into its branch); without it, the hook does nothing
 #   in-flight  the folder of the subagents at work, one sentinel for each — checkbox agents for
 #              implement, child runners for big-implement, possibly several at once (see
-#              PARALLEL.md §5); while it is not empty, the notification of the next one to return
-#              will wake the orchestrator up
+#              PARALLEL.md §5) — or of the session itself waiting for the master's answer
+#              (waiting-master, SESSIONS.md §7); while it is not empty, the notification of the
+#              next one to return, or the master's message, will wake the orchestrator up
 #   blocks     how many times in a row the hook has blocked with the same state
 #
 # When in doubt it lets the turn end (exit 0): a goal that cannot be verified must not turn

@@ -1,6 +1,6 @@
 ---
 name: big-implement
-description: "Carries all the child issues of an /issue-flow:big-plan parent issue through in a single run — GitLab or GitHub — on the parent branch: one wave at a time, in the parent's order, with the children of a wave in parallel, each in its own git worktree and handed to an issue-runner subagent that does the round of /issue-flow:implement (one checkbox agent per phase, several at once too, checkboxes ticked, one commit per phase) and that of /issue-flow:close, which verifies, opens the merge request — pull request on GitHub — toward the parent branch and merges it on its own, one child at a time. At the end it opens the parent's MR/PR toward the target branch, which only the user merges. Triggers: /issue-flow:big-implement, “implement the whole project N”, “carry out the whole roadmap N”, “run all the children of N”; in Italian: «implementa tutto il progetto N», «porta avanti tutta la roadmap N», «esegui tutte le figlie di N»."
+description: "Carries all the child issues of an /issue-flow:big-plan parent issue through in a single run — GitLab or GitHub — on the parent branch: one wave at a time, in the parent's order, with the children of a wave in parallel, each in its own git worktree and handed to an issue-runner subagent that does the round of /issue-flow:implement (one checkbox agent per phase, several at once too, checkboxes ticked, one commit per phase) and that of /issue-flow:close, which verifies, opens the merge request — pull request on GitHub — toward the parent branch and merges it on its own with a squash — one commit per child, fast-forwarded onto the parent branch —, one child at a time. At the end it opens the parent's MR/PR toward the target branch, which only the user merges. The parent branch is roadmap-<parent>-<short description>, the session is called issue-<parent>, and with an /issue-flow:issue-master session open on the project it reports to it and waits for its go. Triggers: /issue-flow:big-implement, “implement the whole project N”, “carry out the whole roadmap N”, “run all the children of N”; in Italian: «implementa tutto il progetto N», «porta avanti tutta la roadmap N», «esegui tutte le figlie di N»."
 argument-hint: "<parent>"
 hooks:
   Stop:
@@ -17,26 +17,29 @@ project** through in one go, without waiting for anyone until the end, and with 
 the same wave **in parallel**:
 
 ```
-main ──────────────────────────────────────────────── ◀── MR/PR issue-20 (the user merges it)
-  └─ issue-20 ──●──────────●────●──────────●──────
-                ▲          ▲    ▲          ▲
-            issue-21   issue-22 issue-23  issue-24
-            wave 1     └── wave 2 ────┘   wave 3
-                       (together, each in its own worktree;
-                        they come back one at a time)
+main ───────────────────────────────────────────────────────── ◀── MR/PR roadmap-20-notifications (the user merges it)
+  └─ roadmap-20-notifications ──●───────────────●──────────●──────────────●──────
+                                ▲               ▲          ▲              ▲
+                         issue-21-schema  issue-22-api  issue-23-ui  issue-24-prefs
+                              wave 1      └──── wave 2 ───────┘         wave 3
+                                          (together, each in its own worktree;
+                                           they come back one at a time)
 ```
 
-- the parent has its own branch, `${user_config.branch_prefix}<parent>`, created from the target
-  branch, and the repo folder stays on that branch from start to finish;
+- the parent has its own branch, `${user_config.roadmap_prefix}<parent>-<short description>`,
+  created from the target branch, and the repo folder stays on that branch from start to
+  finish;
 - each child works in **its own worktree**, on a branch created from the updated parent branch.
   The children of a wave start together from the same commit; a wave starts when the previous
   one is fully merged;
 - each child goes through `close`: verification on the final tree, documentation, MR/PR
   **toward the parent branch** — which here `close` **merges on its own**, because the parent
   branch is not the product: it is the project's work site, and the real review comes at the
-  end. The children of a wave are implemented together but **integrated one at a time**: each
-  one, before its merge, merges in what its siblings have already brought into the parent branch
-  and redoes the verification on top of it;
+  end. The merge is a **squash, fast-forwarded**: the child becomes one commit on the parent
+  branch, on top of the children before it, and the parent branch reads as one commit per
+  child — the dots in the picture above. The children of a wave are implemented together but
+  **integrated one at a time**: each one, before its merge, rebases onto what its siblings have
+  already brought into the parent branch and redoes the verification on top of it;
 - when the last child is merged, the parent's MR/PR toward the target branch is opened as usual
   and **is not merged**: the user approves and merges that one.
 
@@ -46,7 +49,8 @@ the commits and goal mode; `${CLAUDE_PLUGIN_ROOT}/skills/close/SKILL.md` for the
 verification, the documentation, the MR/PR, the merge into the parent branch and the closing;
 `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` for the commands of the two platforms;
 `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` for the roles, the agreement between parallel work and the
-worktrees. **Read all four before the first command.** Below is only what changes.
+worktrees; `${CLAUDE_PLUGIN_ROOT}/SESSIONS.md` for your session's name and for the master, if
+the project has one. **Read all five before the first command.** Below is only what changes.
 
 ## Usage
 
@@ -102,8 +106,8 @@ tracker at:
   each must be merged (box ticked or issue closed) **or** a child that this run carries through
   in a wave **before** its own. A dependency outside both cases — an open external issue, a
   sibling of the same wave or of a later one — is a roadmap that doesn't hold: stop and say so;
-- **whether it has already started** in a previous round: the branch
-  `${user_config.branch_prefix}<n>` exists, has a worktree (`git worktree list`), has ticked
+- **whether it has already started** in a previous round: its branch exists —
+  `branch-name.sh issue <n>` finds it, step 4.1 —, has a worktree (`git worktree list`), has ticked
   checkboxes, already has an MR/PR (`glab mr list --source-branch <branch>`,
   `gh pr list --head <branch>`). Resume from where it was left instead of starting over: from
   the first unticked phase, from the integration if the phases are all done, from the merge if
@@ -116,22 +120,40 @@ project has already been delivered — say so and don't start again.
 Then present the waves to the user and start without asking for confirmation:
 
 ```
-issue-20  parent branch, created from main
-wave 1   #21  issue-21  worktree, created from issue-20   MR/PR → issue-20, merged by close
-wave 2   #22  issue-22  worktree, created from issue-20   ┐ together
-         #23  issue-23  worktree, created from issue-20   ┘ merged one at a time: #22, then #23
-wave 3   #24  issue-24  worktree, created from issue-20   MR/PR → issue-20, merged by close
-issue-20  MR/PR → main, the user merges it
+roadmap-20-notifications  parent branch, created from main
+wave 1   #21  issue-21-schema  worktree, created from roadmap-20-notifications   MR/PR → roadmap-20-notifications, merged by close
+wave 2   #22  issue-22-api     worktree, created from roadmap-20-notifications   ┐ together
+         #23  issue-23-ui      worktree, created from roadmap-20-notifications   ┘ merged one at a time: #22, then #23
+wave 3   #24  issue-24-prefs   worktree, created from roadmap-20-notifications   MR/PR → roadmap-20-notifications, merged by close
+roadmap-20-notifications  MR/PR → main, the user merges it
 ```
 
 If there is no child left to do but the parent doesn't have its MR/PR yet, jump to step 5.
 
+## 1d. Your name, and the master
+
+Step 1d of `implement`, with the parent's number: the session is called `issue-<parent>` —
+`issue-<parent>-<repo>` in a superproject —, green, and if `session.sh master` finds a master
+the `started` goes to it before the parent branch, with `kind: roadmap`, the waves with their
+children, the footprint of every child to do — `"${CLAUDE_PLUGIN_ROOT}/scripts/footprint.sh"
+<parent>` gives it per child —, the resources and the numbered series of the children's Plans,
+and the wave you restart from. Then you end the turn and wait for `go`: the project holds, or
+goes, as a whole. The `do not touch` lines of the `go` reach every runner's prompt, and from
+there every phase's.
+
 ## 2. The parent branch
 
-The parent branch is `${user_config.branch_prefix}<parent>` — with the default `issue-`, parent
-#20 has `issue-20`. It is created from the updated target branch, and goes **straight to the
-remote**: the children's MR/PRs point to it, and `close` recognizes the big-implement flow
-precisely from its existence on `origin`.
+The parent branch is the one the script gives — `${user_config.roadmap_prefix}<parent>-<short
+description>`, or the branch already there if the project was started earlier:
+
+```bash
+BRANCH_PREFIX='${user_config.branch_prefix}' ROADMAP_PREFIX='${user_config.roadmap_prefix}' \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/branch-name.sh" roadmap <parent>     # roadmap-20-notifications
+```
+
+It is created from the updated target branch, and goes **straight to the remote**: the
+children's MR/PRs point to it, and `close` recognizes the big-implement flow precisely from its
+existence on `origin`.
 
 ```bash
 git status --porcelain                 # must be empty
@@ -206,8 +228,9 @@ contract — a name the parent left implicit —, fix it yourself, put it in the
 the runners of the wave and rewrite the parent's **Parallelism** section, re-reading it from the
 server. Don't move work between children: that is a `/issue-flow:plan revise`.
 
-Then, for each child of the wave, its worktree, from the updated parent branch
-(`PARALLEL.md` §4):
+Then, for each child of the wave, its branch — `branch-name.sh issue <n>`: the one already
+there, or `${user_config.branch_prefix}<n>-<short description>` from its title — and its
+worktree, from the updated parent branch (`PARALLEL.md` §4):
 
 ```bash
 git pull --ff-only                                           # you are on the parent branch
@@ -233,7 +256,7 @@ don't write to it doesn't exist**. In the prompt:
   `${CLAUDE_PLUGIN_ROOT}/skills/big-implement/SKILL.md` — for step 4.3, its round —,
   `${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md`, `${CLAUDE_PLUGIN_ROOT}/skills/close/SKILL.md`,
   `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` and `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md`;
-- the configuration values: `${user_config.branch_prefix}`, `${user_config.default_branch}`,
+- the configuration values: `${user_config.branch_prefix}`, `${user_config.roadmap_prefix}`, `${user_config.default_branch}`,
   `${user_config.verify_commands}`, `${user_config.docs_paths}`, `${user_config.figma_file}`,
   `${user_config.max_parallel}` — empty ones included, stated as empty;
 - the language to write the MR/PR and what goes into the issues in — the user's,
@@ -245,7 +268,11 @@ don't write to it doesn't exist**. In the prompt:
   the integration, the MR/PR already open, the merge;
 - what the children of the earlier waves left behind, if they deviated from their issue — the
   child's writer knew them only as a plan. It is the “deviations” field of the previous
-  runners' reports.
+  runners' reports;
+- the files the master reserved for other sessions, if there is a master — the `do not touch`
+  lines of its `go` —, which no phase of the child may modify;
+- that it sends no message to any session — the master included —: what it needs from the
+  master it writes in its report, and you ask.
 
 Each runner has its sentinel in `$GOAL_DIR/in-flight/`, created right before the invocation and
 removed as soon as it returns, before the check.
@@ -290,18 +317,19 @@ integration”. You do the rest when `big-implement` gives you the go-ahead, at 
 #### Close, up to the merge into the parent branch
 
 All of `close` on the child, in its “child on the parent branch” case, in your worktree: the
-checks of step 1 — which bring into the child's branch what the siblings have already merged
-into the parent branch (`git merge origin/<parent-branch>`) and redo the verification on the
-merged tree —, the documentation of step 2, the MR/PR of step 3 **toward the parent branch**,
-then the merge and the closing of step 3b, which don't wait for the user. At the end:
+checks of step 1 — which put the child's branch on top of what the siblings have already merged
+into the parent branch (`git rebase origin/<parent-branch>`) and redo the verification on the
+rebased tree —, the documentation of step 2, the MR/PR of step 3 **toward the parent branch**,
+then the squash merge and the closing of step 3b, which don't wait for the user. At the end:
 
-- the child's MR/PR is merged into the parent branch;
+- the child's MR/PR is merged into the parent branch as **one squash commit**, fast-forwarded:
+  the parent branch has one more commit, `<title> (#<child>)`, and no merge commit;
 - the child is closed, with **Status:** `closed — merged into <parent-branch> on YYYY-MM-DD`;
 - its box on the parent is ticked, and the parent's **Status:** says `k of M`;
 - the worktree stays where it is, with the child's branch: `big-implement` removes it.
 
-A conflict in the merge with the parent branch means the work of two siblings was not
-compatible: `git merge --abort`, you stop and write it in the report with the conflicting
+A conflict in the rebase onto the parent branch means the work of two siblings was not
+compatible: `git rebase --abort`, you stop and write it in the report with the conflicting
 files. You don't resolve it: the agreement was made by whoever is above, and it is up to them.
 
 If `close` stops — an empty box, a red verification, a failed pipeline, an MR/PR the server
@@ -350,18 +378,28 @@ gh   issue view <child> --json state --jq '.state'     # "CLOSED"
 
 # its box is ticked on the parent: re-read the parent from the server
 
-# the repo folder is on the parent branch, clean, and after the pull it has the child's commits
+# the repo folder is on the parent branch, clean, and after the pull it has the child's commit:
+# one squash commit per child, no merge commits — the parent branch is a straight line
 git branch --show-current && git status --porcelain
 git fetch origin && git status -sb | head -1              # no “behind”
-git log --oneline <parent-branch> | grep '(#<child>)'
+git log --oneline <parent-branch> | grep -c '(#<child>)'  # exactly 1
+git log --oneline --merges <target>..<parent-branch>      # nothing
 ```
+
+A merge commit on the parent branch means the server did not fast-forward the squash — on
+GitLab, a project whose merge method is “Merge commit” — : the work is in, the project goes on,
+but say it in the hand-off with the setting to change (Settings → Merge requests → Merge
+method → Fast-forward merge), because the parent branch was meant to read as one commit per
+child.
 
 If the runner stopped, or one of these checks doesn't add up, the project stops: see “When to
 really stop”. A runner that says “merged” when the server says otherwise is not retried: the
 child needs looking at.
 
 Keep the report's deviations: they go into the prompt of the next wave's runners, into your
-agreement at step 4.1 and into the hand-off.
+agreement at step 4.1 and into the hand-off. If a master is coordinating you, `progress` to it:
+the child merged, the wave, the deviations; and a `need file` or `need number` a runner wrote in
+its report goes to the master now, before the next wave, with the wait of `SESSIONS.md` §7.
 
 When the whole wave is merged, move on to the next wave.
 
@@ -382,10 +420,10 @@ table, in the order in which the children entered the parent branch:
 
 ```
 wave  child  MR/PR  phases  merged into
-1     #21    !40    6/6     issue-20
-2     #22    !41    7/7     issue-20   in parallel with #23
-2     #23    !42    5/5     issue-20   in parallel with #22
-3     #24    !43    6/6     issue-20
+1     #21    !40    6/6     roadmap-20-notifications
+2     #22    !41    7/7     roadmap-20-notifications   in parallel with #23
+2     #23    !42    5/5     roadmap-20-notifications   in parallel with #22
+3     #24    !43    6/6     roadmap-20-notifications
 ```
 
 Then the waves and phase groups you ran in sequence instead of in parallel, with the reason;
@@ -415,4 +453,7 @@ why, which worktrees remain (`git worktree list`) and that it resumes with
 `/issue-flow:big-implement <parent>` once fixed: step 1 finds again the children already merged
 and the leftover worktrees, and restarts from there.
 
-Before stopping, `rm -f "$GOAL_DIR/goal"`: otherwise the hook sends you back to work.
+Before stopping, `rm -f "$GOAL_DIR/goal"`: otherwise the hook sends you back to work. And if a
+master is coordinating you, `stopped` to it: which child, at what point, why, what unblocks. A
+`stop` from the master is a reason to stop like the others: the runners at work finish their
+phase, nothing new starts.

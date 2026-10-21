@@ -15,7 +15,7 @@ slashes. Which one it is, `TRACKER.md` says.
 ---
 
 - **Status:** to do
-- **Planned branch:** `issue-<number>`
+- **Planned branch:** `issue-<number>-<short description>`   [filled in by the skill right after the issue is created, from `scripts/branch-name.sh issue <number> "<title>"`; a child of `/issue-flow:big-plan` gets it when the children are numbered]
 - **Roadmap:** #<parent number>   [only for the children of `/issue-flow:big-plan`]
 - **Depends on:** #<number>       [only for the children, one line per sibling it depends on]
 
@@ -98,8 +98,9 @@ writes and the other reads —, and what this phase leaves alone because it belo
 - [ ] `<documentation file>`: [what must be rewritten, not “update the docs”]
 - [ ] commit on the issue's branch
 
-[The MR/PR does not go among the checkboxes: it is opened by `/issue-flow:close <number>` after
-the last phase, and it is not merged — the user asks for the merge.]
+[The MR/PR does not go among the checkboxes: it is opened by `close`, which
+`/issue-flow:implement` runs by itself after the last phase, and it is not merged — the user
+previews it and asks for the merge.]
 
 ## How to update this roadmap
 
@@ -131,8 +132,9 @@ sed -i 's/\r$//' roadmap.md
 gh issue edit <number> --body-file roadmap.md
 ```
 
-When the work is finished: all the boxes ticked, then `/issue-flow:close <number>` opens the
-merge request — the pull request on GitHub — and brings the **Status:** to
+When the work is finished: all the boxes ticked, and `/issue-flow:implement` goes on by itself
+with `/issue-flow:close <number>`, which opens the merge request — the pull request on GitHub —
+and brings the **Status:** to
 `in review — !<MR number>` on GitLab, `in review — #<PR number>` on GitHub. Once it is merged,
 `glab issue close <number>` or `gh issue close <number>`, and the **Status:** becomes
 `closed — merged on YYYY-MM-DD`. On GitHub the issue may have closed by itself: the PR carries

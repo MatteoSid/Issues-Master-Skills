@@ -83,7 +83,7 @@ An issue body **always goes through a file**, never inside shell quotes.
 | change the target of an MR/PR | `glab mr update <n> --target-branch <base>` | `gh pr edit <n> --base <base>` |
 | MR/PR state | `glab mr view <B> --output json --jq '.state'` → `merged` | `gh pr view <B> --json state --jq '.state'` → `MERGED` |
 | pipeline outcome | `glab mr view <n> --output json --jq '.head_pipeline.status'` | `gh pr checks <n> --watch --fail-fast` |
-| merge — **only** into the parent branch | `glab mr merge <n> --sha <SHA> --auto-merge=false --remove-source-branch --yes` | `gh pr merge <n> --merge --match-head-commit <SHA> --delete-branch` |
+| merge — **only** into the parent branch, as one squash commit | `glab mr merge <n> --squash --squash-message M --sha <SHA> --auto-merge=false --remove-source-branch --yes` | `gh pr merge <n> --squash --subject S --body B --match-head-commit <SHA> --delete-branch` |
 
 ## 5. The differences that bite
 
@@ -121,6 +121,13 @@ delete head branches” setting: it is not these skills' job.
 
 **The MR/PR state has different casing.** `merged` on GitLab, `MERGED` on GitHub —
 compare case-insensitively, or the outcome is always “not merged yet”.
+
+**GitLab fast-forwards a squash only if the project says so.** `gh pr merge --squash` always
+puts the single commit straight on the base branch. `glab mr merge --squash` does the same
+only when the project's merge method is “Fast-forward merge” (Settings → Merge requests →
+Merge method); with “Merge commit” it adds a merge commit on top of the squash, and the parent
+branch of `/issue-flow:big-implement` stops reading as one commit per child. `close` checks the
+line after every merge and reports it; the setting is the user's to change.
 
 **On GitHub the issue may already be closed.** If the PR contained `Closes #<n>` and has been
 merged, GitHub closed it by itself. Before closing, check the state: if it is already `CLOSED`,

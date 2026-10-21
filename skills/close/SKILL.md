@@ -8,9 +8,11 @@ argument-hint: "<number> [--merged]"
 
 `/issue-flow:implement` leaves a branch with one commit per phase and the roadmap ticked. This
 skill puts it in front of whoever has to read it: a merge request — a pull request, if the
-tracker is GitHub — with a body that says what changes and how it was verified. Below,
-“MR/PR” stands for whichever of the two applies in this repo; to the user you say the right
-word, not the slash.
+tracker is GitHub — with a body that says what changes and how it was verified. It runs **by
+itself at the end of `implement`**, in the same session, so that the user always finds the
+work ready to preview and approve; on its own, `/issue-flow:close <number>` redoes or resumes
+it. Below, “MR/PR” stands for whichever of the two applies in this repo; to the user you say
+the right word, not the slash.
 
 **Towards the target branch the MR/PR is opened and not merged.** The merge is requested by
 the user, always: towards `${user_config.default_branch}` this skill never runs `glab mr merge`
@@ -19,8 +21,18 @@ or `gh pr merge`, in any case, not even if the pipelines are green.
 The only exception is the child of a project that has the **parent branch** — the one opened
 by `/issue-flow:big-implement`: its MR/PR targets the parent branch, which is the project's
 work site and not the product, and this skill merges it by itself after the same checks as
-always. The work reaches the target branch only with the parent's MR/PR, and that one is
-merged by the user.
+always — **with a squash**: the child enters the parent branch as a single commit, fast-forwarded
+on top of the children already there, so that the parent branch reads as one commit per child.
+The work reaches the target branch only with the parent's MR/PR, and that one is merged by the
+user.
+
+### When you come from `/issue-flow:implement`
+
+`implement` loads this skill in the same conversation right after the commit of its last
+phase. The tracker is verified, the number and the branch are known, the issue was just
+re-read: skip step 0 and start from 0b. The hand-off of step 5 is the only one the user gets,
+so it carries `implement`'s lines too — the phases with their commits, the groups run in
+parallel or brought back to sequence, the checkboxes left empty, the deviations.
 
 ## Usage
 
@@ -38,7 +50,8 @@ The Italian argument of 1.x, `--chiudi`, is still accepted and means the same as
 
 GitLab (`glab`) or GitHub (`gh`) according to `git remote get-url origin`; the command mapping
 is in `${CLAUDE_PLUGIN_ROOT}/TRACKER.md` — the `TRACKER.md` file in this plugin's folder — to
-be read before the first command.
+be read before the first command; `${CLAUDE_PLUGIN_ROOT}/SESSIONS.md` says how to tell the
+project's master, if there is one, that the MR/PR is open or merged.
 
 ```bash
 glab auth status && glab issue view <number>          # GitLab
@@ -52,8 +65,11 @@ it is interactive.
 
 ## 0b. Which case
 
-Re-read the issue from the server and look at the head of the body. The case decides the
-**base** — the branch the MR/PR targets — and who merges it:
+With no number given, the current branch says it:
+`"${CLAUDE_PLUGIN_ROOT}/scripts/branch-name.sh" number` — `12` from `issue-12-date-filter`,
+`20` from `roadmap-20-notifications`. Then re-read the issue from the server and look at the
+head of the body. The case decides the **base** — the branch the MR/PR targets — and who merges
+it:
 
 | case | how you recognize it | base | merge |
 |---|---|---|---|
@@ -64,7 +80,8 @@ Re-read the issue from the server and look at the head of the body. The case dec
 
 The target branch is `${user_config.default_branch}`, or whatever
 `git symbolic-ref --short refs/remotes/origin/HEAD | sed 's#^origin/##'` returns. The parent
-branch is `${user_config.branch_prefix}<parent>`, and it exists if:
+branch is the one `branch-name.sh roadmap <parent>` gives after a `git fetch origin` —
+`${user_config.roadmap_prefix}<parent>-…` —, and it exists if:
 
 ```bash
 git ls-remote --exit-code --heads origin <parent-branch>   # exit 0: it exists
@@ -107,25 +124,38 @@ If empty boxes remain, list them to the user and ask: either work is missing —
 back to `/issue-flow:implement <number>` — or they were dropped and the line must be rewritten
 to tell the truth. Don't tick them yourself to make the count add up.
 
-**The branch is the right one and has nothing pending.** The working branch is
-`${user_config.branch_prefix}<number>` — for the parent, the parent branch itself; the base is
-the one from step 0b.
+**The branch is the right one and has nothing pending.** The working branch is the one
+`branch-name.sh issue <number>` gives — `${user_config.branch_prefix}<number>-…`, or the plain
+`${user_config.branch_prefix}<number>` of an issue started before 2.2 —; for the parent, the
+parent branch itself. The base is the one from step 0b.
+
+```bash
+BRANCH_PREFIX='${user_config.branch_prefix}' ROADMAP_PREFIX='${user_config.roadmap_prefix}' \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/branch-name.sh" issue <number>
+```
 
 ```bash
 git fetch origin
 git branch --show-current             # must be the issue's branch
 git status --porcelain                # must be empty
-git log --oneline origin/<base>..HEAD # the phases' commits, one per phase — for the parent, the
-                                      # children's merges with their commits
+git log --oneline origin/<base>..HEAD # the phases' commits, one per phase — for the parent, one
+                                      # squash commit per child, no merge commits
 git merge-base --is-ancestor origin/<base> HEAD   # exit 0: the branch contains the base
 ```
 
-If the branch does not contain the base — the target branch moved ahead while the project was
-on the parent branch, or the parent branch moved ahead while the child was working, for
-example because a sibling of the same wave got in first — merge the base into the branch
-(`git merge origin/<base>`) and redo the checks. If the merge has conflicts,
-`git merge --abort` and stop: how to resolve them is a decision, not a typo — and between two
-siblings of a wave it means the agreement between them did not hold.
+If the branch does not contain the base, the way to bring it in depends on the case:
+
+- **towards the target branch** — the issue, the child without a parent branch, the parent whose
+  target moved ahead — merge the base into the branch (`git merge origin/<base>`) and redo the
+  checks. If the merge has conflicts, `git merge --abort` and stop: how to resolve them is a
+  decision, not a typo;
+- **the child on the parent branch**, when a sibling of the same wave got in first: **rebase**
+  it, `git rebase origin/<parent-branch>`, and redo the checks. The child must sit linearly on
+  top of the parent branch, because step 3b fast-forwards its squash commit there; a merge
+  commit on the child would break that line. If the rebase has conflicts, `git rebase --abort`
+  and stop: between two siblings of a wave it means the agreement between them did not hold.
+  After a rebase the branch, if it was already on `origin`, is pushed at step 3 with
+  `--force-with-lease`: it is yours alone, nobody else commits on it.
 
 If the working tree is dirty, stop: that work is in no commit and would not end up in the
 MR/PR.
@@ -152,7 +182,7 @@ update it and commit it before going on.
 ## 3. Open the MR/PR
 
 ```bash
-git push -u origin <branch>
+git push -u origin <branch>               # --force-with-lease after the rebase of step 1
 
 # GitLab
 glab mr create \
@@ -231,6 +261,11 @@ glab issue update <number> --description-file "$SCRATCH/roadmap.md"   # GitLab
 gh   issue edit   <number> --body-file        "$SCRATCH/roadmap.md"   # GitHub
 ```
 
+If the project has a master — `"${CLAUDE_PLUGIN_ROOT}/scripts/session.sh" master` — and the
+MR/PR targets the target branch, `mr-open` to it (`SESSIONS.md` §5): the link, the base, the
+verification's real numbers. The master watches only what reaches the target branch: a child's
+MR/PR towards the parent branch is not reported.
+
 For the **child on the parent branch** you don't stop here: go on with step 3b. In the other
 cases the skill ends with the MR/PR open, and continues when the user comes back with
 `--merged`.
@@ -252,23 +287,43 @@ gh pr checks <pr> --watch --fail-fast
 
 A red pipeline is a “When to really stop”, like a red verification at step 1.
 
-**The merge**, tied to the commit you verified, so that nothing you haven't seen gets merged:
+**The merge**, with a **squash** and tied to the commit you verified, so that nothing you
+haven't seen gets merged. The child becomes one commit on the parent branch: the subject is the
+issue's title with its number, the body lists the phases' commits, which disappear from the
+history and survive there:
 
 ```bash
 SHA=$(git rev-parse HEAD)
+BEFORE=$(git rev-parse origin/<parent-branch>)                          # after a git fetch origin
+SUBJECT="<the issue's title> (#<number>)"
+BODY=$(git log --reverse --format='- %s' "origin/<parent-branch>..HEAD")
 
 # GitLab — without `--auto-merge=false` glab postpones the merge to the end of the pipeline, and
 # the next child would be born from a parent branch still without this one
-glab mr merge <mr> --sha "$SHA" --auto-merge=false --remove-source-branch --yes
+glab mr merge <mr> --squash --squash-message "$SUBJECT
 
-# GitHub — `--merge` keeps the phases' commits, with their `(#<number>)`, in the history of the
-# parent branch
-gh pr merge <pr> --merge --match-head-commit "$SHA" --delete-branch
+$BODY" --sha "$SHA" --auto-merge=false --remove-source-branch --yes
+
+# GitHub — the squash commit lands straight on the parent branch, no merge commit
+gh pr merge <pr> --squash --subject "$SUBJECT" --body "$BODY" --match-head-commit "$SHA" --delete-branch
 ```
 
 Then re-read the state: it must be `merged`/`MERGED` **now**. If the server queued it or put it
 in auto-merge, or refused it — conflicts, mandatory approvals, protected branch — stop and
 report what it says.
+
+**The line**, right after: the parent branch must have gained exactly one commit, the child's,
+and no merge commit:
+
+```bash
+git fetch origin && git log --oneline "$BEFORE..origin/<parent-branch>"   # one line: the squash commit
+```
+
+Two lines mean the server added a merge commit on top of the squash: GitLab does it when the
+project's merge method is “Merge commit” instead of “Fast-forward merge” (Settings → Merge
+requests → Merge method). It is not a reason to stop — the work is in —, but say it in the
+report and in the hand-off, with the setting to change, because the parent branch was meant to
+read as one commit per child.
 
 **The closing**, without waiting for `--merged`: step 4 in full — the issue closed, the child's
 **Status:** at `closed — merged into <parent-branch> on YYYY-MM-DD`, the working branch deleted
@@ -309,6 +364,9 @@ The working branch is deleted only if the server hasn't already done it: on GitL
 option, and if neither removed it, `git push origin --delete <branch>`.
 
 If the MR/PR state is not `merged`/`MERGED`, close nothing and say so.
+
+Once closed, if the project has a master, `closed` to it: the session is free, and the master
+takes the row off its board.
 
 ### The parent, if the issue is a child
 
@@ -354,10 +412,24 @@ branch.
 
 ## 5. Hand-off
 
-The MR/PR link, what you verified with the real numbers, the documentation files you had to
-update, and what you found out of place and fixed to be able to open it. After a `--merged` on
-a child — or a merge at step 3b — how far the parent has got (`k of M issues merged`) and which
-child comes next. If you stopped, the reason in one line and what is needed to unblock.
+Written for someone who now has to **look at the work and decide**: the MR/PR link first —
+it is the preview, the diff with its body —, then, in a few lines:
+
+- **what changes** for whoever uses the product, two lines at most;
+- **how to see it**: the manual check of the issue's verification phase as a recipe — the
+  command to run or the page to open on this branch, and what must be visible — so that the
+  user can try it before approving;
+- **what you verified**, with the real numbers, the documentation files you had to update, and
+  what you found out of place and fixed to be able to open it;
+- coming from `implement`: the phases with their commits, the groups run in parallel and those
+  brought back to sequence with the reason, the checkboxes left empty with the reason, the
+  deviations written in the roadmap, the problems the subagents saw outside their scope;
+- and that **nothing was merged**: the MR/PR waits for the user, and once they merge it
+  `/issue-flow:close <number> --merged` closes the issue.
+
+After a `--merged` on a child — or a squash merge at step 3b — how far the parent has got
+(`k of M issues merged`) and which child comes next. If you stopped, the reason in one line and
+what is needed to unblock. Do not paste the issue or the diff.
 
 ## When to really stop
 

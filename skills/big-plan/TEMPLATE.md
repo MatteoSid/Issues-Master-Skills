@@ -19,6 +19,7 @@ copy them in English verbatim; write the rest in the user's language — `TRACKE
 
 - **Type:** roadmap
 - **Status:** to do
+- **Planned branch:** `roadmap-<number>-<short description>`   [the branch `/issue-flow:big-implement` works on; filled in by the skill when the children are numbered, from `scripts/branch-name.sh roadmap <number> "<title>"`]
 
 ## Goal
 
@@ -92,15 +93,15 @@ By hand, the children run **one at a time, in the order above** — within a wav
 each with its own branch and its own merge request — pull request on GitHub:
 
 ```
-/issue-flow:implement <child>         # or this issue's number: takes the first open child
-/issue-flow:close <child>             # opens the child's merge request
+/issue-flow:implement <child>         # or this issue's number: takes the first open child, up to its merge request
 /issue-flow:close <child> --merged    # once merged: closes the child and ticks it here
 ```
 
 Or all at once, without waiting for the merges, with `/issue-flow:big-implement <this issue>`:
 this issue has its own branch, each child is born from there — those of a wave together, each in
 its own worktree — and goes back into it with a merge request merged automatically, one at a
-time, after the checks of `/issue-flow:close`; at the end the merge request of this issue brings
+time, after the checks of `/issue-flow:close`, as a single squash commit: this issue's branch
+reads as one commit per child; at the end the merge request of this issue brings
 the whole project into the target branch, and only whoever approves it merges it. Once it is
 merged, `/issue-flow:close <this issue> --merged`.
 

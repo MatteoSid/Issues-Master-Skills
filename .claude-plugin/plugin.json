@@ -1,8 +1,8 @@
 {
   "name": "issue-flow",
   "displayName": "Issue Flow",
-  "version": "2.1.0",
-  "description": "From request to merge request through an issue that holds the plan and the roadmap that executes it; for large developments, a project roadmap split into issues run in waves, with the work that can be parallelized handed to several agents, each in its own git worktree; and, before all that, the next steps proposed from the project's documentation. Works on GitLab (glab) and GitHub (gh).",
+  "version": "2.2.0",
+  "description": "From request to merge request through an issue that holds the plan and the roadmap that executes it; for large developments, a project roadmap split into issues run in waves, with the work that can be parallelized handed to several agents, each in its own git worktree; several sessions on the same project, each on its own issue, coordinated by a master session; and, before all that, the next steps proposed from the project's documentation. Works on GitLab (glab) and GitHub (gh).",
   "author": {
     "name": "Matteo Donato"
   },
@@ -27,8 +27,14 @@
     "branch_prefix": {
       "type": "string",
       "title": "Work branch prefix",
-      "description": "An issue's branch is named <prefix><issue number>.",
+      "description": "An issue's branch is named <prefix><issue number>-<short description from the title>.",
       "default": "issue-"
+    },
+    "roadmap_prefix": {
+      "type": "string",
+      "title": "Roadmap branch prefix",
+      "description": "The branch of a [ROADMAP] parent — the one big-implement works on — is named <prefix><issue number>-<short description from the title>.",
+      "default": "roadmap-"
     },
     "verify_commands": {
       "type": "string",

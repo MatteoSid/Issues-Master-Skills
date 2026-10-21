@@ -1,9 +1,10 @@
 # Issue Flow
 
 From the request to the merge request, by way of an issue that holds the plan **and** the
-roadmap that executes it. Six skills that hand work to each other, and that put several agents
-to work together where possible, on **GitLab** (`glab`) or **GitHub** (`gh`) alike: the
-platform is inferred from the remote.
+roadmap that executes it. Seven skills that hand work to each other, that put several agents
+to work together where possible, and that let several sessions work on the same project at
+once, on **GitLab** (`glab`) or **GitHub** (`gh`) alike: the platform is inferred from the
+remote.
 
 The principle that holds it all together: *the issue must be executable by an agent that was
 not present for the conversation.* From there follow the verified `file.ts:42` references, the
@@ -15,9 +16,10 @@ explicit out of scope.
 | `/issue-flow:roadmap` | **what do we do now**: reads the project's documentation — the [research-flow](https://github.com/MatteoSid/Research-Master-Skills) registers if there are any, otherwise README, CLAUDE.md, docs — plus the open issues and the code, and proposes the next steps with their sources; once approved, saves it to `ROADMAP.md` or creates its issues with `big-plan` |
 | `/issue-flow:plan` | **one feature**: reconnaissance in the code, decision points asked to the user, then opens the issue with the plan and a checkbox roadmap inside |
 | `/issue-flow:big-plan` | **a big development**: defines the project's roadmap in a parent issue — `[ROADMAP] …` in the title — and splits it into child issues in waves, with scopes and contracts for those that will work together; each child is written in full by a subagent, all in parallel |
-| `/issue-flow:implement` | executes the roadmap one phase per subagent — the phases of a parallel group together, each in its own worktree —, ticks the boxes as it goes, one commit per phase; works like a `/goal` and does not stop until the roadmap is complete; on a parent it takes the first open child |
-| `/issue-flow:big-implement` | carries all the children of a parent in one go on the parent branch: one wave at a time, the children of a wave together, each in its own worktree and handed to a subagent that does the `implement` and `close` rounds, and `close` merges it into the parent branch on its own, one at a time; at the end it opens the parent's MR/PR, which you merge |
-| `/issue-flow:close` | verifies the final tree, opens the MR/PR, and once merged closes the issue and ticks it on the parent; the child of a project with a parent branch it merges there on its own |
+| `/issue-flow:implement` | executes the roadmap one phase per subagent — the phases of a parallel group together, each in its own worktree —, ticks the boxes as it goes, one commit per phase; works like a `/goal` and does not stop until the roadmap is complete; then goes on with `close` by itself, so the MR/PR is there for you to preview — never merged; on a parent it takes the first open child |
+| `/issue-flow:big-implement` | carries all the children of a parent in one go on the parent branch: one wave at a time, the children of a wave together, each in its own worktree and handed to a subagent that does the `implement` and `close` rounds, and `close` merges it into the parent branch on its own — a squash, one commit per child, fast-forwarded —, one at a time; at the end it opens the parent's MR/PR, which you merge |
+| `/issue-flow:close` | verifies the final tree, opens the MR/PR with what changes and how to see it, and once merged closes the issue and ticks it on the parent; `implement` runs it by itself at the end, on its own it redoes or resumes; the child of a project with a parent branch it squash-merges there on its own |
+| `/issue-flow:issue-master` | **several sessions at once**: the session that coordinates the other sessions of the project — one terminal per issue or roadmap, each running `implement` or `big-implement` —: it finds them, agrees on what each may touch before it starts, holds the ones that would collide, hands out numbered resources, tells the others when an MR/PR is merged; it never merges |
 
 Plus three subagents: `issue-flow:issue-phase`, the checkbox agent, which executes a single
 phase and cannot commit or touch the issue — the orchestrator does that, after verifying the
@@ -59,6 +61,9 @@ re-confirms them on the current code before starting. If they no longer hold, th
 in sequence. A conflict at integration means the agreement did not hold: nobody resolves it by
 hand, everything stops and the issues get corrected. The full rules are in `PARALLEL.md`.
 
+One level further up, the same rule holds between **sessions**: see “Several sessions at once”
+below, and `SESSIONS.md`.
+
 ## Installation
 
 ```
@@ -71,7 +76,9 @@ hand, everything stops and the issues get corrected. The full rules are in `PARA
 
 You need git 2.5 or later, for worktrees. You need `glab` or `gh` installed and authenticated —
 the skills check it at step 0 and stop with the command to run if it is missing. Login is
-interactive and Claude cannot do it. You also need `jq`, which the `implement` hook uses.
+interactive and Claude cannot do it. You also need `jq`, which the `implement` hook and the
+session scripts use. `tmux` is optional: with it, the sessions rename and recolor themselves;
+without it, they tell you the two commands to type.
 
 ## Configuration
 
@@ -81,7 +88,8 @@ set when you enable the plugin, or with `claude plugin install --config key=valu
 | option | default | what it is for |
 |---|---|---|
 | `default_branch` | from the repo | the branch MR/PRs are merged into |
-| `branch_prefix` | `issue-` | the work branch is `<prefix><issue number>` |
+| `branch_prefix` | `issue-` | the work branch is `<prefix><issue number>-<short description>` — `issue-12-date-filter` |
+| `roadmap_prefix` | `roadmap-` | the branch of a `[ROADMAP]` parent, the one `big-implement` works on, is `<prefix><parent number>-<short description>` — `roadmap-20-notifications` |
 | `verify_commands` | from the project | the commands that must pass before a phase is closed |
 | `docs_paths` | from the project | the documentation the wrap-up phase re-reads |
 | `max_parallel` | `3` | how many agents work together under the same agent that assigns the work: children of a wave, phases of a group; `1` turns parallelism off |
@@ -124,18 +132,18 @@ For a feature:
 
 ```
 /issue-flow:plan add a date filter to the list                   →  opens issue #12
-/issue-flow:implement 12                                         →  branch issue-12, one commit per phase
-/issue-flow:close 12                                             →  opens the MR/PR
-/issue-flow:close 12 --merged                                    →  once merged, closes the issue
+/issue-flow:implement 12                                         →  branch issue-12-add-a-date-filter-to-the-list,
+                                                                    one commit per phase, then the MR/PR
+                                                                    opens by itself: you preview and approve
+/issue-flow:close 12 --merged                                    →  once you have merged it, closes the issue
 ```
 
 For a development that does not fit in one issue:
 
 ```
 /issue-flow:big-plan notification system with user preferences   →  parent #20, children #21, then #22 ∥ #23
-/issue-flow:implement 20                                         →  takes the first open child, #21
-/issue-flow:close 21                                             →  opens the MR/PR of #21
-/issue-flow:close 21 --merged                                    →  closes #21 and ticks it on #20
+/issue-flow:implement 20                                         →  takes the first open child, #21, up to its MR/PR
+/issue-flow:close 21 --merged                                    →  once merged: closes #21 and ticks it on #20
 /issue-flow:implement 20                                         →  now it is #22's turn, and so on
 ```
 
@@ -144,16 +152,19 @@ starts from the target branch with the previous ones already merged in. Or all a
 waiting for the merges and with the children of a wave in parallel:
 
 ```
-/issue-flow:big-implement 20      →  branch issue-20 from main; #21, then #22 and #23 together, each
-                                     in its own worktree, branch off issue-20 and come back into it
-                                     on their own, one at a time; then the MR/PR issue-20 → main
+/issue-flow:big-implement 20      →  branch roadmap-20-notification-system from main; #21, then #22
+                                     and #23 together, each in its own worktree, branch off it and
+                                     come back into it on their own, one at a time, each as one
+                                     squash commit; then the MR/PR roadmap-20-notification-system → main
 /issue-flow:close 20 --merged     →  after you have merged the parent's MR/PR: closes #20
 ```
 
 Every child goes through `close` as always — verification on the final tree, documentation,
-MR/PR — but towards the parent branch, and there the plugin merges it on its own: it is the
-project's work site, not the product. Only the parent's MR/PR reaches the target branch, and
-that one the plugin never merges: you approve it and you merge it. You do not need to know in
+MR/PR — but towards the parent branch, and there the plugin merges it on its own, as a single
+squash commit fast-forwarded onto the previous children: the parent branch reads as one commit
+per child, because it is the project's work site, not the product. Only the parent's MR/PR
+reaches the target branch, and that one the plugin never merges: you approve it and you merge
+it. You do not need to know in
 advance which of the two to use: `/issue-flow:plan` always checks whether the request fits in
 one issue, and when it does not it stops, warns with the measured numbers and a draft split, and
 proposes how to proceed — switch to `big-plan` (which picks up from the reconnaissance already
@@ -171,6 +182,34 @@ twice, a choice the issue did not make — and says so. With `big-implement` the
 the children of the project and the parent, up to the last merge into the parent branch. The
 goal's state lives in `.git/issue-flow/`, outside the commits.
 
+## Several sessions at once
+
+Each `implement` or `big-implement` runs in a Claude Code session of its own, and you can open
+as many as you have issues ready — and, in a superproject, as many as you have submodules with
+work to do. To keep them from stepping on each other, open one more and run
+`/issue-flow:issue-master` in it:
+
+```
+terminal 1   /issue-flow:issue-master        →  issue-master-app, yellow: the coordinator
+terminal 2   /issue-flow:implement 12        →  issue-12, green: reports to the master, waits for its go, works
+terminal 3   /issue-flow:implement 14        →  issue-14, green: overlaps #12 on src/api/list.ts → held until #12 is merged
+terminal 4   /issue-flow:big-implement 20    →  issue-20, green: the whole roadmap, as one row of the board
+```
+
+Every session names itself — `issue-<n>` in a single repository, `issue-<n>-<repo>` in a
+superproject, `issue-master-<project>` for the master — and sets its prompt color, so that the
+prompt bar and `/resume` say what each terminal is doing. Inside tmux the sessions do it by
+themselves, as soon as they are idle; outside, each one tells you the two commands to type.
+
+The master keeps a board of who works on what and where, agrees before each start on what the
+session may touch — the files its Plan names, the magnet files, the numbered series such as
+migrations, the ports and databases the verification uses —, holds a session that would rewrite
+what another one is rewriting, answers the sessions that need a file or a number, tells the
+others to bring the target branch in when you merge an MR/PR, and tells you what stopped. It
+never merges, it never implements, and it never speaks for you: you still talk to every session
+in its own terminal. Without a master the sessions work as they always did. The names, the
+messages and the waits are in `SESSIONS.md`.
+
 ## The three rules the plugin does not negotiate
 
 **Tick as you go.** At the end of each phase, in the same commit that carries it — not when the
@@ -182,7 +221,8 @@ and does not merge: starting from a copy kept in the conversation wipes out the 
 ticked from the page in the meantime.
 
 **The MR/PR is opened, not merged.** The merge is the user's call, always — not even green
-pipelines change that.
+pipelines change that. `implement` ends with the MR/PR open and a hand-off that says what
+changes and how to see it running: the preview is yours to look at before approving.
 
 ## GitLab and GitHub
 
