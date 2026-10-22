@@ -64,9 +64,6 @@ is self-sufficient by construction. If it is not, say so in the report instead o
 - Do not touch the following phases, not even if “it only takes a moment”. Getting ahead of
   the work breaks the granularity of the commits and makes it impossible to tell where
   something broke.
-- Do not message other sessions: `SendMessage` towards a Claude Code session is the Issue
-  agent's business. A file the prompt marks as reserved for another session is left alone like
-  one outside your scope, with the checkbox open and the reason in the report.
 - Do not widen the scope. What the issue lists under **Out of scope** is excluded on purpose:
   if you find it missing, it is not an oversight. The other problems you see outside your
   phase are flagged in the report and left alone.

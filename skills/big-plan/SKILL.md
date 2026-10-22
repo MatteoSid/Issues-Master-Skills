@@ -242,16 +242,7 @@ Then the placeholders become numbers:
 - in every child that cites a sibling — `**Depends on:** #(2)`, “created by #(2)”, the out of
   scope — `#(k)` becomes `#<number>`;
 - in the parent, the **Issues** section becomes `- [ ] #<number> title — what it delivers`, and
-  the **Parallelism** section cites the children by their number;
-- the **Planned branch** lines take their real name, from the script that decides every branch
-  name of the plugin: in the parent `branch-name.sh roadmap <parent> "<title>"` —
-  `roadmap-20-notification-preferences`, the branch `/issue-flow:big-implement` works on —, in
-  every child `branch-name.sh issue <number> "<title>"` — `issue-21-the-schema`:
-
-  ```bash
-  BRANCH_PREFIX='${user_config.branch_prefix}' ROADMAP_PREFIX='${user_config.roadmap_prefix}' \
-    "${CLAUDE_PLUGIN_ROOT}/scripts/branch-name.sh" issue <number> "<title>"
-  ```
+  the **Parallelism** section cites the children by their number.
 
 Every rewrite follows the usual rule: **re-read the body from the server**, replace, check the
 file is not empty, send it back up (`TRACKER.md` §4). At the end, a `grep -n '#([0-9]\+)'` on
@@ -272,7 +263,8 @@ Not with this skill. By hand, the children are executed **one at a time, in orde
 wave in any order — with the normal round:
 
 ```
-/issue-flow:implement <child>           # or <parent>: picks the first child not yet merged, up to its MR/PR
+/issue-flow:implement <child>           # or <parent>: picks the first child not yet merged
+/issue-flow:close <child>               # opens the child's MR/PR
 /issue-flow:close <child> --merged      # once merged: closes the child and ticks it on the parent
 ```
 
@@ -283,8 +275,7 @@ inside. The parent's box is ticked **when the child is merged**, not when it is 
 Or all at once with `/issue-flow:big-implement <parent>`: the same round on the parent branch,
 with the children of a wave executed together, each in its own worktree — every child is born
 from there and goes back into it with its MR/PR, which `close` merges by itself after the usual
-checks, one child at a time, as a single squash commit fast-forwarded onto the parent branch —
-one commit per child, in order. At the end the parent's MR/PR brings everything into the target
+checks, one child at a time. At the end the parent's MR/PR brings everything into the target
 branch, and the user merges it; then `/issue-flow:close <parent> --merged`.
 
 If during execution a child discovers that the roadmap no longer holds — a decision of the

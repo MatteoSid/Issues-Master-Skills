@@ -14,9 +14,6 @@ worktrees; the skills cite it instead of repeating themselves.
 | **Issue agent** | the `implement` session, or the `issue-runner` subagent of `big-implement` | the checkbox agents, one per phase |
 | **checkbox agent** | the `issue-phase` subagent | nobody: it completes the checkboxes of **one** phase |
 
-One level further up — several **sessions** on the same project, each with its own issue or
-roadmap, and the `issue-master` session that keeps them apart — the reference is `SESSIONS.md`.
-
 The rule that holds everything together: **the work of two agents working together is agreed
 on by the agent that assigns it, before assigning it.** Two agents in parallel do not talk to
 each other and do not see each other: if their work has to fit together, it fits because the
@@ -98,8 +95,8 @@ WT=$(git rev-parse --path-format=absolute --git-common-dir)/issue-flow/wt
 
 `--git-common-dir` and not `--git-path`: inside a worktree `--git-path` points to that
 worktree's private folder, and a runner working in a worktree would end up creating them in a
-different place from where the one above looks for them. The name is the branch's:
-`$WT/issue-21-schema` for a child, `$WT/issue-21-schema-phase-3` for a phase.
+different place from where the one above looks for them. The name is the branch's: `$WT/issue-21`
+for a child, `$WT/issue-21-phase-3` for a phase.
 
 ### The round
 
@@ -142,10 +139,8 @@ git worktree remove "$WT/<branch>-phase-3" && git branch -D <branch>-phase-3
 ```
 
 The children of a wave follow the same round one level up, with two differences: the branches
-are the children's real ones (`issue-21-schema`, born from the parent branch) and they are integrated
-with their `close`, one at a time, instead of with a cherry-pick — each rebased onto the parent
-branch and merged as a single squash commit, so that the parent branch reads as one commit per
-child (`skills/big-implement/SKILL.md`).
+are the children's real ones (`issue-21`, born from the parent branch) and they are integrated
+with their `close`, one at a time, instead of with a cherry-pick (`skills/big-implement/SKILL.md`).
 
 ### A conflict means the contract did not hold
 
@@ -180,5 +175,4 @@ rm -f "$GOAL_DIR/in-flight/phase-3"
 
 As long as the folder is not empty the hook does not block: the notification of the next one
 to return wakes you up. A forgotten sentinel turns the goal off, so you remove it **as soon
-as** that agent returns, before verifying its work. The same folder holds `waiting-master`, the
-sentinel of a session that waits for the master's answer (`SESSIONS.md` §7).
+as** that agent returns, before verifying its work.

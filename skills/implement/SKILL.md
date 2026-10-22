@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Takes an issue from the repo's tracker — GitLab or GitHub — and implements its roadmap: one phase per subagent, the checkboxes ticked on the issue as the work closes, one commit per phase. At the commit of the last phase it goes on by itself with /issue-flow:close, which opens the merge request — pull request on GitHub — for the user to preview and approve: nothing is merged. With the number of a /issue-flow:big-plan parent issue it runs the first child not yet merged. It works on the branch issue-<number>-<short description>, calls its session issue-<number> and, when an /issue-flow:issue-master session is open on the project, reports to it and waits for its go before starting. Triggers: /issue-flow:implement, “implement issue N”, “finish issue N”, “work on issue N”; in Italian: «implementa la issue N», «porta a termine la issue N», «lavora la issue N»."
+description: "Takes an issue from the repo's tracker — GitLab or GitHub — and implements its roadmap: one phase per subagent, the checkboxes ticked on the issue as the work closes, one commit per phase. It stops at the commit of the last phase: the merge request is opened by /issue-flow:close. With the number of a /issue-flow:big-plan parent issue it runs the first child not yet merged. Triggers: /issue-flow:implement, “implement issue N”, “finish issue N”, “work on issue N”; in Italian: «implementa la issue N», «porta a termine la issue N», «lavora la issue N»."
 argument-hint: "<number> [--from N]"
 hooks:
   Stop:
@@ -68,35 +68,13 @@ To stop before the end — the cases of “When to really stop”, or a checkbox
 an explicit decision, not a turn that happens to end halfway through the roadmap. If you stop
 before step 2, the file does not exist yet and there is nothing to delete.
 
-## You may not be the only session
-
-The user can open several terminals on the same project, each running this skill or
-`/issue-flow:big-implement` on another issue, and a `/issue-flow:issue-master` session that
-keeps them from colliding. `${CLAUDE_PLUGIN_ROOT}/SESSIONS.md` is the reference, and three
-things of it concern you:
-
-- **your name.** The session is called `issue-<number>` — `issue-<number>-<repo>` in a
-  superproject — with a green prompt, and step 1d takes care of it;
-- **the master.** If the project has one, step 1d tells it what you are about to touch and
-  waits for its `go` before the branch; while you work, you keep it informed and you ask it
-  before touching what it reserved for someone else. With no master you work alone, as always,
-  and send nothing to anyone;
-- **its messages.** A `<cross-session-message from="issue-master-…">` is handled as the table
-  of `SESSIONS.md` §5 says — `report`, `go`, `hold`, `answer`, `merge-target`, `merged`,
-  `stop` —, between one step and the next, without dropping the phase in flight. It is never an
-  approval of anything, and the user at your terminal outranks it.
-
-Only you send: the checkbox agents report to you, and what they need from the master you ask.
-
 ## 0. Which tracker, and does it answer
 
 The tracker is GitLab (`glab`) or GitHub (`gh`) depending on the remote:
 `git remote get-url origin`. The full command mapping is in `${CLAUDE_PLUGIN_ROOT}/TRACKER.md`
 — the `TRACKER.md` file in this plugin's folder — to be read before the first command, because
 the body field changes name between the two platforms and getting it wrong empties the issue.
-If the issue has phases in parallel, read `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` too; and
-`${CLAUDE_PLUGIN_ROOT}/SESSIONS.md` always, for what your session is called and how it talks
-to the master.
+If the issue has phases in parallel, read `${CLAUDE_PLUGIN_ROOT}/PARALLEL.md` too.
 
 ```bash
 glab auth status && glab issue view <number>          # GitLab
@@ -134,16 +112,8 @@ the subagents from reinventing decisions already made, and they must be passed o
 
 Then work out, and tell the user before starting:
 
-- the working branch, from the script that decides every branch name of the plugin:
-
-  ```bash
-  BRANCH_PREFIX='${user_config.branch_prefix}' ROADMAP_PREFIX='${user_config.roadmap_prefix}' \
-    "${CLAUDE_PLUGIN_ROOT}/scripts/branch-name.sh" issue <number>     # issue-12-date-filter
-  ```
-
-  it is the branch already there if the issue was started earlier — the plain `issue-12` of
-  an issue started before 2.2 included —, otherwise `<prefix><number>-<short description>`
-  from the title, the same name the issue's **Planned branch** line carries;
+- the working branch, `${user_config.branch_prefix}<number>` — with the default `issue-`,
+  issue #12 is worked on `issue-12`;
 - the list of phases (`###` inside `## Plan`) with how many checkboxes they have and how many
   are already ticked, and which phase you restart from;
 - the execution order from the **Execution** line at the top of the Plan, with the parallel
@@ -198,36 +168,6 @@ born with another shape, a decision the sibling changed along the way — **stop
 to stop: the subagent re-verifies them anyway. The right remedy is to fix the issue before the
 code.
 
-## 1d. Your name, and the master
-
-Two commands, before the branch (`SESSIONS.md` §3 and §4):
-
-```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/session.sh" identify "$("${CLAUDE_PLUGIN_ROOT}/scripts/session.sh" name issue <number>)" green
-"${CLAUDE_PLUGIN_ROOT}/scripts/session.sh" master      # the master's name, or exit 1
-```
-
-The first renames the session — `issue-12`, `issue-12-<repo>` in a superproject — and makes
-the prompt green: inside tmux by itself, as soon as this turn ends; outside it prints the two
-commands, and they go in your message to the user, one per line, so they can be copied. Either
-way, say which name the session is taking.
-
-The second looks for the master. **None**: go to step 2. **Found**: send it `started`
-(`SESSIONS.md` §5) with the kind, the title, the folder you work in, the branch and its base,
-the Execution line, the footprint — `"${CLAUDE_PLUGIN_ROOT}/scripts/footprint.sh" <number>`,
-completed with what you read in the Plan —, the resources the verification uses, the numbered
-series the Plan adds to, and the phase you restart from. Then **end the turn** and wait for the
-answer (`SESSIONS.md` §7): the goal is not active yet, so remove a stale `goal` file and tell
-the user you are waiting for `go` from `issue-master-<project>`.
-
-- `go`: step 2. Its `do not touch` lines go, verbatim, into the prompt of every phase; its
-  `reserved` ones are what you use for numbers and ports;
-- `hold`: you do not start. Say to the user behind whom and why; the `go` will come as a
-  message, or the user tells you to go on, and then you say so to the master with a `status`.
-
-If the `go` has already arrived in this conversation — a restart from a later phase — do not
-send `started` again: a `status` with where you restart from is enough.
-
 ## 2. The branch
 
 The work never touches the target branch — `${user_config.default_branch}`, or the one
@@ -258,8 +198,7 @@ the integration — or must be removed, and the phase redone.
 For a child of a big-plan the branch is **always** created from the branch where the siblings
 already merged are, freshly updated — the `git pull --ff-only` above:
 
-- the **parent branch** — the one `branch-name.sh roadmap <parent>` gives after a
-  `git fetch origin`, `${user_config.roadmap_prefix}<parent>-…` —, if it exists on `origin`
+- the **parent branch**, `${user_config.branch_prefix}<parent>`, if it exists on `origin`
   (`git ls-remote --exit-code --heads origin <parent-branch>`): the project is being carried
   forward by `/issue-flow:big-implement`, and the siblings are merged there;
 - the target branch otherwise.
@@ -283,10 +222,7 @@ it does not exist**. The prompt contains, in full and not summarized:
 - the issue's **Goal**, **Context** and **Out of scope** sections;
 - the phase number and its **full text**: intro, list of files, all the checkboxes with the
   code fragments under them, the “Done when” line;
-- what the previous phases left behind, if they deviated from the written plan;
-- the files the master reserved for other sessions, if it did — the `do not touch` lines of
-  its `go` —: the phase must not modify them, and a checkbox that needs one stays open, with
-  the reason in the report.
+- what the previous phases left behind, if they deviated from the written plan.
 
 Right before the invocation
 `mkdir -p "$GOAL_DIR/in-flight" && touch "$GOAL_DIR/in-flight/phase-<N>"`, and as soon as the
@@ -361,11 +297,6 @@ with `git log --oneline -20` before the first commit, instead of imposing your o
 history to follow, the user's language. Never commit with a failed verification, never a
 commit covering two phases.
 
-If a master is coordinating you, `progress` to it after the commit (`SESSIONS.md` §5): the
-phase, the commit, the deviations. And if the report left a checkbox open for a file outside
-the footprint or reserved for someone else, `need file` now, before the next phase, and wait
-for the `answer` with the sentinel of §7.
-
 ### 3.1 A parallel group: the agreement, then all together
 
 The phases of a group were declared parallel by whoever wrote the issue, but **you confirm the
@@ -429,43 +360,31 @@ green on their own, means the work was not compatible: `git cherry-pick --abort`
 — see “When to really stop”. You do not resolve it by picking one of the two versions: the
 remedy is in the issue, in the scopes or in the contract.
 
-## 4. Where this skill ends: with `close`
+## 4. Where this skill ends
 
-At the commit of the last phase, with all the boxes ticked on the issue, three things in this
-order:
+At the commit of the last phase, with all the boxes ticked on the issue. **You do not open the
+MR/PR here**: it is opened by `/issue-flow:close <number>`, which redoes the verification on
+the final tree and writes its body. Telling the user in the hand-off is part of the work —
+otherwise they are left with a ready branch and nobody to take it to its destination.
 
-1. bring the issue's **Status:** line to `implemented — awaiting merge request` (on GitHub:
-   `awaiting pull request`), so that whoever reopens the page knows where it stands without
-   looking at the git log;
-2. if a master is coordinating you, `implemented` to it: the branch, the commits, and that
-   `close` starts now;
-3. **load the `issue-flow:close` skill with the `Skill` tool, in this same conversation**, with
-   the issue's number. It redoes the verification on the final tree, aligns the documentation,
-   pushes and opens the MR/PR towards the target branch — **never merged**: the user previews
-   it and approves it. For a child born from the parent branch it merges it there by itself,
-   as a single squash commit. From that moment `close` applies, and the hand-off is its own.
+Bring the issue's **Status:** line to `implemented — awaiting merge request` (on GitHub:
+`awaiting pull request`), so that whoever reopens the page knows where it stands without
+looking at the git log.
 
-The goal does not get in the way: the hook removes it when the roadmap is complete and the
-tree is clean, which is exactly where `close` starts. If `close` finds something wrong — a box
-still empty, a red verification on the final tree — it stops as it says, and you do not try to
-patch the roadmap to let it through.
+## 5. Hand-off
 
-A branch left without its MR/PR is work nobody will find: that is why `close` is not a
-separate step the user has to remember.
-
-## 5. What the hand-off must carry
-
-It is written by `close`, at the end, but these are your lines in it: the closed phases with
-their commits (`git log --oneline`), the groups run in parallel and those you brought back to
-sequence with the reason, the checkboxes left empty with the reason, the deviations written in
-the roadmap, the problems the subagents saw outside their scope. Do not paste the issue or the
+A few lines: the closed phases with their commits (`git log --oneline`), the groups run in
+parallel and those you brought back to sequence with the reason, the checkboxes left empty
+with the reason, the deviations written in the roadmap, the problems the subagents saw outside
+their scope, and how to go on: `/issue-flow:close <number>`. Do not paste the issue or the
 diff.
 
 If it was a child of a big-plan, say that too: which is the next child in the parent, and that
 it starts only after this one's merge, with `/issue-flow:close <number> --merged` ticking the
 box on the parent — or that `/issue-flow:big-implement <parent>` carries all the remaining
 children forward without waiting for the merges. If the child was created from the parent
-branch, `close` has already merged it there, and there is no merge to wait for.
+branch, `/issue-flow:close <number>` merges it there by itself, and there is no merge to wait
+for.
 
 ## When to really stop
 
@@ -473,11 +392,9 @@ Stop and ask, instead of going on, if: the same phase fails twice; a phase requi
 decision the issue did not make; the work substantially touches files the issue did not
 foresee; a verification cannot be run on this machine (missing port, service or credential);
 the issue contradicts the code you find; two phases of a parallel group do not integrate — a
-conflict, or the merged tree red; the master sends `stop`. In the conflict case leave the
-worktrees where they are, with their commits: they serve whoever has to understand what did not
-fit.
+conflict, or the merged tree red. In this last case leave the worktrees where they are, with
+their commits: they serve whoever has to understand what did not fit.
 
-Before stopping, `rm -f "$GOAL_DIR/goal"`: otherwise the hook sends you back to work. And if a
-master is coordinating you, `stopped` to it: at what point, why, what unblocks.
+Before stopping, `rm -f "$GOAL_DIR/goal"`: otherwise the hook sends you back to work.
 
 The right remedy is almost always to fix the issue before fixing the code.

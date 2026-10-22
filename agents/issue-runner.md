@@ -59,12 +59,11 @@ branch.
    and wait for `big-implement`'s go-ahead. The siblings are integrated one at a time, and your
    final verification must run with the ones already merged inside.
 4. **Close**, in the “child on the parent branch” case, in your worktree: the checks of step
-   1 — with the `git rebase origin/<parent-branch>` that puts the child on top of the siblings
-   already merged, and the verification redone on the rebased tree —, the documentation of
-   step 2, the MR/PR of step 3 **towards the parent branch**, the **squash** merge and the
-   closing of step 3b — one commit for the child on the parent branch, the issue closed, the
-   child's **Status:**, the box ticked on the parent with the **Status:** `k of M`. You leave
-   the worktree where it is: `big-implement` removes it.
+   1 — with the `git merge origin/<parent-branch>` that brings in the siblings already merged,
+   and the verification redone on the merged tree —, the documentation of step 2, the MR/PR of
+   step 3 **towards the parent branch**, the merge and the closing of step 3b — the issue
+   closed, the child's **Status:**, the box ticked on the parent with the **Status:**
+   `k of M`. You leave the worktree where it is: `big-implement` removes it.
 
 ## What you don't do
 
@@ -79,11 +78,6 @@ branch.
 - **Never a merge towards the target branch**, nor the parent's MR/PR: that one is opened by
   `big-implement` when all the children are merged, and the user merges it.
 - Do not touch the other children, nor the parent beyond its box and the **Status:** line.
-- **No messages to other sessions.** `SendMessage` towards a session — the project's master
-  of `SESSIONS.md` included — is for `big-implement` alone: a message from you would go out
-  under its name, and the answer would land in its conversation. What you need from the master
-  — a file outside the child's scope, a number of a series — goes in your report, and the
-  files the prompt marks as reserved for other sessions you do not modify.
 - Do not implement the phases yourself, not even when “it only takes a moment”: the reason you
   exist is to keep the phases out of the context of whoever is above, and the phases out of
   yours.

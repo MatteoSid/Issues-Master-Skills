@@ -226,18 +226,8 @@ The title says **what changes for whoever uses the product**, not which file is 
 lowercase sentence, with no final period. The number is the one the tracker assigns, and it is
 read from the URL the creation command prints.
 
-The working branch is `${user_config.branch_prefix}<number>-<short description>` — with the
-default `issue-`, issue #12 “add a date filter to the list” is worked on
-`issue-12-add-a-date-filter-to-the-list`. The short description comes from the title — lowercase
-ASCII, words joined by `-`, cut at 40 characters on a word boundary — and the script that
-decides every branch name of the plugin builds it:
-
-```bash
-BRANCH_PREFIX='${user_config.branch_prefix}' "${CLAUDE_PLUGIN_ROOT}/scripts/branch-name.sh" issue <number> "<title>"
-```
-
-The number exists only after the issue is created, so the **Planned branch** line of the body
-is filled in at step 5, right after the creation.
+The working branch is `${user_config.branch_prefix}<issue number>` — with the default `issue-`,
+issue #12 is worked on `issue-12`.
 
 ### 5. Write the issue
 
@@ -251,12 +241,6 @@ gh   issue create --title "<title>" --body-file        <file>         # GitHub
 
 The file avoids passing a long body inside shell quotes. The assigned number is the one the
 command prints in the URL: read it from there, do not infer it.
-
-Then the **Planned branch** line, which the body could not carry before the number existed:
-the name from `branch-name.sh issue <number> "<title>"` (step 4), written with the usual round
-— re-read the body from the server, replace the line, check the file is not empty, send it
-back up (`TRACKER.md` §4). It is the name `/issue-flow:implement` will use, and the one the
-user can look for in `git branch`.
 
 ### 6. Hand-off
 
@@ -286,8 +270,7 @@ Two phases are mandatory and always go at the bottom, in this order:
   interface, also the keyboard check, responsiveness and accessibility;
 - **the last is the wrap-up**: the documentation files that must be rewritten, named one by
   one, and the commit on the issue's branch. The MR/PR **is not a roadmap checkbox**: it is
-  opened by `close`, which `/issue-flow:implement` runs by itself when all the phases are
-  closed.
+  opened by `/issue-flow:close <number>` when all the phases are closed.
 
 A third is conditional: if `${user_config.figma_file}` is configured and the change touches the
 frontend, **the first phase is Figma**. You work with the `figma:figma-use` skill and the
@@ -377,9 +360,8 @@ When all of an issue's checkboxes are ticked and the work is merged, it gets clo
 ## Who executes the issue
 
 Not this skill: `/issue-flow:implement <n>` takes it, sends one phase per subagent and ticks the
-boxes as it goes, then goes on by itself with `/issue-flow:close <n>`, which verifies the final
-tree and opens the MR/PR for the user to preview; once they have merged it, `--merged` closes
-the issue. Write the roadmap knowing that it will be read by an agent
+boxes as it goes; then `/issue-flow:close <n>` verifies the final tree, opens the MR/PR and,
+once it is merged, closes the issue. Write the roadmap knowing that it will be read by an agent
 that witnessed nothing — that is the reason the phases must be self-contained.
 
 The same rules hold for the child issues of `/issue-flow:big-plan`: they are written by the
